@@ -3,6 +3,7 @@
 #include <iostream>
 #include <unordered_set>
 #include <algorithm>
+#include <random>
 
 #include <imgui.h>
 #include <glmlv/imgui_impl_glfw_gl3.hpp>
@@ -253,7 +254,7 @@ Application::Application(int argc, char** argv):
     // Init GBuffer
     glGenTextures(GBufferTextureCount, m_GBufferTextures);
 
-    for (int32_t i = GPosition; i < GBufferTextureCount; ++i)
+    for (int32_t i = GPosition; i < GBufferTextureCount-1; ++i)
     {
         glBindTexture(GL_TEXTURE_2D, m_GBufferTextures[i]);
         glTexStorage2D(GL_TEXTURE_2D, 1, m_GBufferTextureFormat[i], m_nWindowWidth, m_nWindowHeight);
@@ -435,6 +436,7 @@ void Application::initShadersData()
     m_uGBufferSamplerLocations[GAmbient] = glGetUniformLocation(m_shadingPassProgram.glId(), "uGAmbient");
     m_uGBufferSamplerLocations[GDiffuse] = glGetUniformLocation(m_shadingPassProgram.glId(), "uGDiffuse");
     m_uGBufferSamplerLocations[GGlossyShininess] = glGetUniformLocation(m_shadingPassProgram.glId(), "uGGlossyShininess");
+	//m_uGBufferSamplerLocations[GSSAO] = glGetUniformLocation(m_shadingPassProgram.glId(), "uGSSAO");
     
     m_uDirectionalLightDirLocation = glGetUniformLocation(m_shadingPassProgram.glId(), "uDirectionalLightDir");
     m_uDirectionalLightIntensityLocation = glGetUniformLocation(m_shadingPassProgram.glId(), "uDirectionalLightIntensity");
@@ -450,4 +452,66 @@ void Application::initShadersData()
 
     m_uGPositionSamplerLocation = glGetUniformLocation(m_displayPositionProgram.glId(), "uGPosition");
     m_uSceneSizeLocation = glGetUniformLocation(m_displayPositionProgram.glId(), "uSceneSize");
+
+
+}
+
+void Application::computeSSAO() {
+	//generate ssao fbos for processing
+	glGenFramebuffers(1, &m_ssaoFBO);
+	glGenFramebuffers(1, &m_ssaoBlurFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, m_ssaoFBO);
+
+	//ssao color buffer
+	glGenTextures(1, &m_ssaoColorBuffer);
+	glBindTexture(GL_TEXTURE_2D, m_ssaoColorBuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, m_nWindowWidth, m_nWindowHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + 10, GL_TEXTURE_2D, m_ssaoColorBuffer, 0);
+	
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "ssao framebuffer not complete !" << std::endl;
+	
+	//ssao blur buffer
+	
+	glBindBuffer(GL_FRAMEBUFFER, m_ssaoBlurFBO);
+	glGenTextures(1, &m_ssaoColorBufferBlur);
+	glBindTexture(GL_TEXTURE_2D, m_ssaoColorBufferBlur);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, m_nWindowWidth, m_nWindowHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 +10, GL_TEXTURE_2D, m_ssaoColorBufferBlur, 0);
+
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "ssao framebuffer not complete !" << std::endl;
+	
+	glBindBuffer(GL_FRAMEBUFFER, 0);
+
+	//Sample Kernel
+	std::uniform_real_distribution<GLfloat> randomFloats(0.0, 1.0);
+	std::default_random_engine generator;
+	
+	for (GLuint i = 0; i < 64; i++) {
+		glm::vec3 sample(randomFloats(generator) * 2.0 - 1.0, randomFloats(generator)*2.0 - 1.0, randomFloats(generator));
+		sample = glm::normalize(sample);
+		sample *= randomFloats(generator);
+		GLfloat scale = GLfloat(i) / 64.0;
+		scale = lerp(0.1f, 1.0f, scale*scale);
+		sample *= scale;
+		m_ssaoKernel.push_back(sample);
+	}
+
+	// Noise texture
+	for (GLuint i = 0; i < 16; i++) {
+		glm::vec3 noise(randomFloats(generator) * 2.0 - 1.0, randomFloats(generator)*2.0 - 1.0, 0.0f);
+		m_ssaoNoise.push_back(noise);
+	}
+	
+}
+
+//utility lerp function
+GLfloat Application::lerp(GLfloat a, GLfloat b, GLfloat f)
+{
+	return a + f * (b - a);
 }

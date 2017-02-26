@@ -21,6 +21,9 @@ private:
 
     void initShadersData();
 
+	void computeSSAO();
+	GLfloat lerp(GLfloat a, GLfloat b, GLfloat f);
+
     static glm::vec3 computeDirectionVector(float phiRadians, float thetaRadians)
     {
         const auto cosPhi = glm::cos(phiRadians);
@@ -48,11 +51,12 @@ private:
         GDiffuse,
         GGlossyShininess,
         GDepth,
+		GSSAO,
         GBufferTextureCount
     };
 
-    const char * m_GBufferTexNames[GBufferTextureCount + 1] = { "position", "normal", "ambient", "diffuse", "glossyShininess", "depth", "beauty" }; // Tricks, since we cant blit depth, we use its value to draw the result of the shading pass
-    const GLenum m_GBufferTextureFormat[GBufferTextureCount] = { GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGBA32F, GL_DEPTH_COMPONENT32F };
+    const char * m_GBufferTexNames[GBufferTextureCount + 1] = { "position", "normal", "ambient", "diffuse", "glossyShininess", "depth", "ssao", "beauty" }; // Tricks, since we cant blit depth, we use its value to draw the result of the shading pass
+    const GLenum m_GBufferTextureFormat[GBufferTextureCount] = { GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGBA32F, GL_RGB32F, GL_DEPTH_COMPONENT32F };
     GLuint m_GBufferTextures[GBufferTextureCount];
     GLuint m_GBufferFBO; // Framebuffer object
 
@@ -134,6 +138,15 @@ private:
     // Display position pass uniforms
     GLint m_uGPositionSamplerLocation;
     GLint m_uSceneSizeLocation;
+
+	//SSAO framebuffers for SSAO processing
+	GLuint m_ssaoFBO;
+	GLuint m_ssaoBlurFBO;
+	GLuint m_ssaoColorBuffer;
+	GLuint m_ssaoColorBufferBlur;
+	GLuint m_noiseTexture;
+	std::vector<glm::vec3> m_ssaoKernel;
+	std::vector<glm::vec3> m_ssaoNoise;
 
     // Lights
     float m_DirLightPhiAngleDegrees = 140.f;
