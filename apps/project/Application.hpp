@@ -140,6 +140,11 @@ private:
     GLint m_uSceneSizeLocation;
 
 	//SSAO framebuffers for SSAO processing
+	glmlv::GLProgram m_ssaoGeometryPass;
+	glmlv::GLProgram m_ssaoLightningPass;
+	glmlv::GLProgram m_ssaoPass;
+	glmlv::GLProgram m_ssaoPassBlur;
+
 	GLuint m_ssaoFBO;
 	GLuint m_ssaoBlurFBO;
 	GLuint m_ssaoColorBuffer;

@@ -95,6 +95,24 @@ int Application::run()
             glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
         }
 
+		// 2. Create SSAO texture
+		glBindFramebuffer(GL_FRAMEBUFFER, m_ssaoFBO);
+		glClear(GL_COLOR_BUFFER_BIT);
+		//use current program
+		//m_sh.Use();
+		/*glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, gPosition);
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, gNormal);
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, noiseTexture);
+		// Send kernel + rotation 
+		for (GLuint i = 0; i < 64; ++i)
+			glUniform3fv(glGetUniformLocation(shaderSSAO.Program, ("samples[" + std::to_string(i) + "]").c_str()), 1, &ssaoKernel[i][0]);
+		glUniformMatrix4fv(glGetUniformLocation(shaderSSAO.Program, "projection"), 1, GL_FALSE, glm::value_ptr(projection));
+		//RenderQuad();*/
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
         // Put here rendering code
         const auto viewportSize = m_GLFWHandle.framebufferSize();
         glViewport(0, 0, viewportSize.x, viewportSize.y);
@@ -268,10 +286,13 @@ Application::Application(int argc, char** argv):
     }
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_GBufferTextures[GDepth], 0);
 
+	
+
     // we will write into 5 textures from the fragment shader
     GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
     glDrawBuffers(5, drawBuffers);
 
+	computeSSAO();
     GLenum status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
 
     if (status != GL_FRAMEBUFFER_COMPLETE) {
@@ -436,7 +457,7 @@ void Application::initShadersData()
     m_uGBufferSamplerLocations[GAmbient] = glGetUniformLocation(m_shadingPassProgram.glId(), "uGAmbient");
     m_uGBufferSamplerLocations[GDiffuse] = glGetUniformLocation(m_shadingPassProgram.glId(), "uGDiffuse");
     m_uGBufferSamplerLocations[GGlossyShininess] = glGetUniformLocation(m_shadingPassProgram.glId(), "uGGlossyShininess");
-	//m_uGBufferSamplerLocations[GSSAO] = glGetUniformLocation(m_shadingPassProgram.glId(), "uGSSAO");
+	m_uGBufferSamplerLocations[GSSAO] = glGetUniformLocation(m_shadingPassProgram.glId(), "uGSSAO");
     
     m_uDirectionalLightDirLocation = glGetUniformLocation(m_shadingPassProgram.glId(), "uDirectionalLightDir");
     m_uDirectionalLightIntensityLocation = glGetUniformLocation(m_shadingPassProgram.glId(), "uDirectionalLightIntensity");
@@ -453,11 +474,16 @@ void Application::initShadersData()
     m_uGPositionSamplerLocation = glGetUniformLocation(m_displayPositionProgram.glId(), "uGPosition");
     m_uSceneSizeLocation = glGetUniformLocation(m_displayPositionProgram.glId(), "uSceneSize");
 
+	m_ssaoGeometryPass = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "ssao_geometry.vs.glsl", m_ShadersRootPath / m_AppName / "ssao_geometry.fs.glsl" });
+	m_ssaoLightningPass = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "ssao.vs.glsl", m_ShadersRootPath / m_AppName / "ssao_lightning.fs.glsl" });
+	m_ssaoPass = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "ssao.vs.glsl", m_ShadersRootPath / m_AppName / "ssao.fs.glsl" });
+	m_ssaoPassBlur = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "ssao.vs.glsl", m_ShadersRootPath / m_AppName / "ssao_blur.fs.glsl" });
 
 }
 
 void Application::computeSSAO() {
 	//generate ssao fbos for processing
+	
 	glGenFramebuffers(1, &m_ssaoFBO);
 	glGenFramebuffers(1, &m_ssaoBlurFBO);
 	glBindFramebuffer(GL_FRAMEBUFFER, m_ssaoFBO);
@@ -468,13 +494,13 @@ void Application::computeSSAO() {
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, m_nWindowWidth, m_nWindowHeight, 0, GL_RGB, GL_FLOAT, NULL);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + 10, GL_TEXTURE_2D, m_ssaoColorBuffer, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + GBufferTextureType::GSSAO, GL_TEXTURE_2D, m_ssaoColorBuffer, 0);
 	
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		std::cout << "ssao framebuffer not complete !" << std::endl;
-	
+	/*
 	//ssao blur buffer
-	
+	// we will check that later
 	glBindBuffer(GL_FRAMEBUFFER, m_ssaoBlurFBO);
 	glGenTextures(1, &m_ssaoColorBufferBlur);
 	glBindTexture(GL_TEXTURE_2D, m_ssaoColorBufferBlur);
@@ -485,9 +511,9 @@ void Application::computeSSAO() {
 
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		std::cout << "ssao framebuffer not complete !" << std::endl;
-	
+	*/
 	glBindBuffer(GL_FRAMEBUFFER, 0);
-
+	
 	//Sample Kernel
 	std::uniform_real_distribution<GLfloat> randomFloats(0.0, 1.0);
 	std::default_random_engine generator;
