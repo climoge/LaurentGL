@@ -254,7 +254,7 @@ Application::Application(int argc, char** argv):
     // Init GBuffer
     glGenTextures(GBufferTextureCount, m_GBufferTextures);
 
-    for (int32_t i = GPosition; i < GBufferTextureCount-1; ++i)
+    for (int32_t i = GPosition; i < GBufferTextureCount; ++i)
     {
         glBindTexture(GL_TEXTURE_2D, m_GBufferTextures[i]);
         glTexStorage2D(GL_TEXTURE_2D, 1, m_GBufferTextureFormat[i], m_nWindowWidth, m_nWindowHeight);
