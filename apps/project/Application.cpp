@@ -32,7 +32,7 @@ int Application::run()
             glViewport(0, 0, m_nWindowWidth, m_nWindowHeight);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            const auto modelMatrix = glm::mat4();
+            const auto modelMatrix = glm::scale(glm::mat4(), glm::vec3(0.05f, 0.05f, 0.05f));
 
             const auto mvMatrix = viewMatrix * modelMatrix;
             const auto mvpMatrix = projMatrix * mvMatrix;
@@ -53,12 +53,14 @@ int Application::run()
             glUniform1i(m_uKdSamplerLocation, 1);
             glUniform1i(m_uKsSamplerLocation, 2);
             glUniform1i(m_uShininessSamplerLocation, 3);
+            glUniform1i(m_uNormalSamplerLocation, 4);
 
             const auto bindMaterial = [&](const PhongMaterial & material)
             {
                 glUniform3fv(m_uKaLocation, 1, glm::value_ptr(material.Ka));
                 glUniform3fv(m_uKdLocation, 1, glm::value_ptr(material.Kd));
                 glUniform3fv(m_uKsLocation, 1, glm::value_ptr(material.Ks));
+                glUniform3fv(m_uNormalLocation, 1, glm::value_ptr(material.normal));
                 glUniform1fv(m_uShininessLocation, 1, &material.shininess);
 
                 glActiveTexture(GL_TEXTURE0);
@@ -69,6 +71,8 @@ int Application::run()
                 glBindTexture(GL_TEXTURE_2D, material.KsTextureId);
                 glActiveTexture(GL_TEXTURE3);
                 glBindTexture(GL_TEXTURE_2D, material.shininessTextureId);
+                glActiveTexture(GL_TEXTURE4);
+                glBindTexture(GL_TEXTURE_2D, material.normalTextureId);
             };
 
             glBindVertexArray(m_SceneVAO);
@@ -301,7 +305,7 @@ void Application::initScene()
     glGenBuffers(1, &m_SceneIBO);
 
     {
-        const auto objPath = m_AssetsRootPath / "glmlv" / "models" / "crytek-sponza" / "sponza.obj";
+        const auto objPath = m_AssetsRootPath / "glmlv" / "models" / "crytek-sponza" / "cube.obj";
         glmlv::ObjData data;
         loadObj(objPath, data);
         m_SceneSize = data.bboxMax - data.bboxMin;
@@ -361,10 +365,13 @@ void Application::initScene()
             newMaterial.Ka = material.Ka;
             newMaterial.Kd = material.Kd;
             newMaterial.Ks = material.Ks;
+            newMaterial.normal = material.normal;
             newMaterial.shininess = material.shininess;
             newMaterial.KaTextureId = material.KaTextureId >= 0 ? textureIds[material.KaTextureId] : m_WhiteTexture;
             newMaterial.KdTextureId = material.KdTextureId >= 0 ? textureIds[material.KdTextureId] : m_WhiteTexture;
             newMaterial.KsTextureId = material.KsTextureId >= 0 ? textureIds[material.KsTextureId] : m_WhiteTexture;
+            std::cout << "Normal texture : " << material.normalTextureId << std::endl;
+            newMaterial.normalTextureId = material.normalTextureId >= 0 ? textureIds[material.normalTextureId] : m_WhiteTexture;
             newMaterial.shininessTextureId = material.shininessTextureId >= 0 ? textureIds[material.shininessTextureId] : m_WhiteTexture;
 
             m_SceneMaterials.emplace_back(newMaterial);
@@ -377,6 +384,7 @@ void Application::initScene()
         m_DefaultMaterial.KaTextureId = m_WhiteTexture;
         m_DefaultMaterial.KdTextureId = m_WhiteTexture;
         m_DefaultMaterial.KsTextureId = m_WhiteTexture;
+        m_DefaultMaterial.normalTextureId = m_WhiteTexture;
         m_DefaultMaterial.shininessTextureId = m_WhiteTexture;
     }
 
@@ -422,11 +430,13 @@ void Application::initShadersData()
     m_uKaLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uKa");
     m_uKdLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uKd");
     m_uKsLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uKs");
+    m_uNormalLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uNormal");
     m_uShininessLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uShininess");
     m_uKaSamplerLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uKaSampler");
     m_uKdSamplerLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uKdSampler");
     m_uKsSamplerLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uKsSampler");
     m_uShininessSamplerLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uShininessSampler");
+    m_uNormalSamplerLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uNormalSampler");
 
     m_shadingPassProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "shadingPass.vs.glsl", m_ShadersRootPath / m_AppName / "shadingPass.fs.glsl" });
 

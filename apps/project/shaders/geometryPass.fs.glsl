@@ -25,11 +25,13 @@ uniform sampler2D uKaSampler;
 uniform sampler2D uKdSampler;
 uniform sampler2D uKsSampler;
 uniform sampler2D uShininessSampler;
+uniform sampler2D uNormalSampler;
 
 void main()
 {
     fPosition = vViewSpacePosition;
     fNormal = normalize(vViewSpaceNormal);
+    //fNormal = vec3(texture(uNormalSampler, vTexCoords));
 
     vec3 ka = uKa * vec3(texture(uKaSampler, vTexCoords));
     vec3 kd = uKd * vec3(texture(uKdSampler, vTexCoords));

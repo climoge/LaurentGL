@@ -14,12 +14,14 @@ namespace glmlv
             glm::vec3 Ka = glm::vec3(0); // Ambient multiplier
             glm::vec3 Kd = glm::vec3(0); // Diffuse multiplier
             glm::vec3 Ks = glm::vec3(0); // Glossy multiplier
+            glm::vec3 normal = glm::vec3(0); // Normal multiplier
             float shininess = 0.f; // Glossy exponent
 
             // Indices in the textures vector:
             int32_t KaTextureId = -1;
             int32_t KdTextureId = -1;
             int32_t KsTextureId = -1;
+            int32_t normalTextureId = -1;
             int32_t shininessTextureId = -1;
         };
 

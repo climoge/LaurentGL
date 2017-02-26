@@ -84,12 +84,14 @@ private:
         glm::vec3 Ka = glm::vec3(0); // Ambient multiplier
         glm::vec3 Kd = glm::vec3(0); // Diffuse multiplier
         glm::vec3 Ks = glm::vec3(0); // Glossy multiplier
+        glm::vec3 normal = glm::vec3(0); // Normal multiplier
         float shininess = 1.f; // Glossy exponent
 
         // OpenGL texture ids:
         GLuint KaTextureId = 0;
         GLuint KdTextureId = 0;
         GLuint KsTextureId = 0;
+        GLuint normalTextureId = 0;
         GLuint shininessTextureId = 0;
     };
 
@@ -115,11 +117,13 @@ private:
     GLint m_uKaLocation;
     GLint m_uKdLocation;
     GLint m_uKsLocation;
+    GLint m_uNormalLocation;
     GLint m_uShininessLocation;
     GLint m_uKaSamplerLocation;
     GLint m_uKdSamplerLocation;
     GLint m_uKsSamplerLocation;
     GLint m_uShininessSamplerLocation;
+    GLint m_uNormalSamplerLocation;
 
     // Shading pass uniforms
     GLint m_uGBufferSamplerLocations[GDepth];
