@@ -145,6 +145,13 @@ private:
 	glmlv::GLProgram m_ssaoPass;
 	glmlv::GLProgram m_ssaoPassBlur;
 
+    GLint m_uSSAOGDepthSamplerLocation;
+    GLint m_uSSAOGSceneSizeLocation;
+    GLint m_uSSAOGPosition;
+    GLint m_uSSAOGNormal;
+    GLint m_uSSAOGTexNoise;
+    GLint m_uGSSAOBufferSamplerLocations[2];
+
 	GLuint m_ssaoFBO;
 	GLuint m_ssaoBlurFBO;
 	GLuint m_ssaoColorBuffer;
