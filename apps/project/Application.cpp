@@ -114,7 +114,7 @@ int Application::run()
             glUniform1i(glGetUniformLocation(m_ssaoPass.glId(), "uSSAOGNormal"),1);
             glActiveTexture(GL_TEXTURE2);
             glBindTexture(GL_TEXTURE_2D, m_noiseTexture);
-            glUniform1i(glGetUniformLocation(m_ssaoPass.glId(), "uSSAOGTexNoise"),2);
+            glUniform1i(glGetUniformLocation(m_ssaoPass.glId(), "uSSAOGTexNoise"), 2);
             //SendKernelSamplesToShader();
             for (GLuint i = 0; i < 64; ++i){
                glUniform3fv(glGetUniformLocation(m_ssaoPass.glId(), ("samples[" + std::to_string(i) + "]").c_str()), 1, &m_ssaoKernel[i][0]);
@@ -501,13 +501,6 @@ void Application::initShadersData()
     m_uGBufferSamplerLocations[GGlossyShininess] = glGetUniformLocation(m_shadingPassProgram.glId(), "uGGlossyShininess");
 	m_uGBufferSamplerLocations[GSSAO] = glGetUniformLocation(m_shadingPassProgram.glId(), "uGSSAO");
 
-    //ssao uniforms for sampler locations
-    m_uGSSAOBufferSamplerLocations[GPosition] = glGetUniformLocation(m_ssaoPass.glId(), "uGSSAOPosition");
-    m_uGSSAOBufferSamplerLocations[GNormal] = glGetUniformLocation(m_ssaoPass.glId(), "uGSSAONormal");
-    m_uGSSAOBufferSamplerLocations[GAmbient] = glGetUniformLocation(m_ssaoPass.glId(), "uGAmbient");
-    m_uGSSAOBufferSamplerLocations[GDiffuse] = glGetUniformLocation(m_ssaoPass.glId(), "uGDiffuse");
-    m_uGSSAOBufferSamplerLocations[GGlossyShininess] = glGetUniformLocation(m_ssaoPass.glId(), "uGGlossyShininess");
-    m_uGSSAOBufferSamplerLocations[GSSAO] = glGetUniformLocation(m_ssaoPass.glId(), "uGSSAO");
     
     m_uDirectionalLightDirLocation = glGetUniformLocation(m_shadingPassProgram.glId(), "uDirectionalLightDir");
     m_uDirectionalLightIntensityLocation = glGetUniformLocation(m_shadingPassProgram.glId(), "uDirectionalLightIntensity");
@@ -545,20 +538,7 @@ void Application::computeSSAO() {
 	
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 		std::cout << "ssao framebuffer not complete !" << std::endl;
-	/*
-	//ssao blur buffer
-	// we will check that later
-	glBindBuffer(GL_FRAMEBUFFER, m_ssaoBlurFBO);
-	glGenTextures(1, &m_ssaoColorBufferBlur);
-	glBindTexture(GL_TEXTURE_2D, m_ssaoColorBufferBlur);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RED, m_nWindowWidth, m_nWindowHeight, 0, GL_RGB, GL_FLOAT, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_ssaoColorBufferBlur, 0);
 
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cout << "ssao framebuffer not complete !" << std::endl;
-	*/
 	glBindBuffer(GL_FRAMEBUFFER, 0);
 	
 	//Sample Kernel
@@ -580,16 +560,21 @@ void Application::computeSSAO() {
 	for (GLuint i = 0; i < 16; i++) {
 		glm::vec3 noise(randomFloats(generator) * 2.0 - 1.0, randomFloats(generator)*2.0 - 1.0, 0.0f);
 		m_ssaoNoise.push_back(noise);
-        std::cout << m_ssaoNoise[i] << std::endl;
+        //m_ssaoNoise.push_back(glm::vec3(1, 1, 1));
 	}
 
     glGenTextures(1, &m_noiseTexture);
     glBindTexture(GL_TEXTURE_2D, m_noiseTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, 4, 4, 0, GL_RGB, GL_FLOAT, &m_ssaoNoise[0]);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, 4, 4, 0, GL_RGB, GL_FLOAT, &m_ssaoNoise[0]);
+    glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, 4, 4);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 4, 4, GL_RGB, GL_FLOAT, &m_ssaoNoise);
+   /* glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);*/
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glBindTexture(GL_TEXTURE_2D, 0);
 	
 }
 

@@ -3,7 +3,8 @@
 uniform sampler2D uSSAOGPosition;
 uniform sampler2D uSSAOGNormal;
 uniform sampler2D uSSAOGTexNoise;
-uniform vec3 uSSAOGSceneSize; // Scene size in view space (coordinate of top right view frustum corner)
+uniform sampler2D m_noiseTexture;
+//uniform vec3 uSSAOGSceneSize; // Scene size in view space (coordinate of top right view frustum corner)
 uniform vec3 samples[64];
 
 out vec3 fColor;
@@ -22,7 +23,7 @@ void main()
     // Get input for SSAO algorithm
     vec3 fragPos = vec3(texelFetch(uSSAOGPosition, ivec2(gl_FragCoord.xy), 0));
     vec3 normal = vec3(texelFetch(uSSAOGNormal, ivec2(gl_FragCoord.xy), 0));
-    //vec3 theNoise = vec3(texelFetch(uSSAOGTexNoise, ivec2(gl_FragCoord.xy), 0));
+    vec3 theNoise = vec3(texelFetch(uSSAOGTexNoise, ivec2(gl_FragCoord.xy), 0));
     vec3 randomVec = vec3(normalize(texelFetch(uSSAOGTexNoise, ivec2(gl_FragCoord.xy * noiseScale), 0)));
     // Create TBN change-of-basis matrix: from tangent-space to view-space
     vec3 tangent = normalize(randomVec - normal * dot(randomVec, normal));
@@ -50,13 +51,9 @@ void main()
     }
     occlusion = 1.0 - (occlusion / kernelSize);
 
-    //fColor = randomVec;
+    fColor = randomVec;
     //fColor = vec3(occlusion, occlusion, occlusion);
     //fColor = theNoise;
-    randomVec *= 100;
-    fColor = randomVec;
+    
 
 }
-/*
-
-}*/
