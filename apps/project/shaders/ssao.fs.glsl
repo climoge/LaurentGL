@@ -8,9 +8,6 @@ uniform vec3 samples[64];
 
 out vec3 fColor;
 
-    //fColor = vec3(texelFetch(uGPosition, ivec2(gl_FragCoord.xy), 0)) / uSSAOGSceneSize; // Since the depth is between 0 and 1, pow it to darkness its value
-	//fColor = vec3(texelFetch(uGNormal, ivec2(gl_FragCoord.xy), 0)) / uSSAOGSceneSize; 
-	//fColor = vec3(0,1,0);
 int kernelSize = 64;
 float radius = 0.5;
 float bias = 0.025;
@@ -23,9 +20,9 @@ uniform mat4 projection;
 void main()
 {
     // Get input for SSAO algorithm
-    vec3 fragPos = vec3(texelFetch(uSSAOGPosition, ivec2(gl_FragCoord.xy), 0)) / uSSAOGSceneSize;
-    vec3 normal = vec3(texelFetch(uSSAOGNormal, ivec2(gl_FragCoord.xy), 0)) / uSSAOGSceneSize;
-    vec3 theNoise = vec3(texelFetch(uSSAOGTexNoise, ivec2(gl_FragCoord.xy), 0));
+    vec3 fragPos = vec3(texelFetch(uSSAOGPosition, ivec2(gl_FragCoord.xy), 0));
+    vec3 normal = vec3(texelFetch(uSSAOGNormal, ivec2(gl_FragCoord.xy), 0));
+    //vec3 theNoise = vec3(texelFetch(uSSAOGTexNoise, ivec2(gl_FragCoord.xy), 0));
     vec3 randomVec = vec3(normalize(texelFetch(uSSAOGTexNoise, ivec2(gl_FragCoord.xy * noiseScale), 0)));
     // Create TBN change-of-basis matrix: from tangent-space to view-space
     vec3 tangent = normalize(randomVec - normal * dot(randomVec, normal));
@@ -52,10 +49,12 @@ void main()
         occlusion += (sampleDepth >= sample.z + bias ? 1.0 : 0.0) * rangeCheck;           
     }
     occlusion = 1.0 - (occlusion / kernelSize);
-    
-    fColor = normal;
+
+    //fColor = randomVec;
     //fColor = vec3(occlusion, occlusion, occlusion);
-    //fColor = theNoise / uSSAOGSceneSize;
+    //fColor = theNoise;
+    randomVec *= 100;
+    fColor = randomVec;
 
 }
 /*

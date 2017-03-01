@@ -144,6 +144,7 @@ private:
 	glmlv::GLProgram m_ssaoLightningPass;
 	glmlv::GLProgram m_ssaoPass;
 	glmlv::GLProgram m_ssaoPassBlur;
+    glmlv::GLProgram m_displaySSAOProgram;
 
     GLint m_uSSAOGDepthSamplerLocation;
     GLint m_uSSAOGSceneSizeLocation;
