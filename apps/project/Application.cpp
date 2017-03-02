@@ -114,6 +114,16 @@ int Application::run()
             glActiveTexture(GL_TEXTURE2);
             glBindTexture(GL_TEXTURE_2D,m_noiseTexture);
             glUniform1i(m_uSSAOGTexNoise, 2);
+
+
+                         const auto rcpProjMat = glm::inverse(projMatrix);
+
+            const glm::vec4 frustrumTopRight(1, 1, 1, 1);
+            const auto frustrumTopRight_view = rcpProjMat * frustrumTopRight;
+
+            glUniform3fv(glGetUniformLocation(m_ssaoPass.glId(), "uSSAOGSceneSize"), 1, glm::value_ptr(frustrumTopRight_view / frustrumTopRight_view.w));
+
+
             
 
             for (GLuint i = 0; i < 64; ++i){
@@ -562,6 +572,15 @@ void Application::computeSSAO() {
 	}
 
 	// Noise texture
+    /*
+    *   THIS IS EXTREMELY DIRTY
+    *   better practice : make a noise texture 4*4 and tile it when using it with a noisescale
+    *   but can't make it work right now and commit can NOT WAIT THIS IS IMAC3
+    *   
+    *   making a 921600 loop is the perfect way to end these 3 years
+    *
+    *************/
+
 	for (GLuint i = 0; i < 921600; i++) {
 		glm::vec3 noise(randomFloats(generator) * 2.0 - 1.0, randomFloats(generator)*2.0 - 1.0, 0.0f);
 		m_ssaoNoise.push_back(noise);

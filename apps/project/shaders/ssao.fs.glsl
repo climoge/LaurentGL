@@ -3,14 +3,14 @@
 uniform sampler2D uSSAOGPosition;
 uniform sampler2D uSSAOGNormal;
 uniform sampler2D uSSAOGTexNoise;
-//uniform vec3 uSSAOGSceneSize; // Scene size in view space (coordinate of top right view frustum corner)
+uniform vec3 uSSAOGSceneSize; // Scene size in view space (coordinate of top right view frustum corner)
 uniform vec3 samples[64];
 
 out vec3 fColor;
 
 int kernelSize = 64;
-float radius = 0.5;
-float bias = 0.025;
+float radius = 1;
+float bias = 0.05;
 
 // tile noise texture over screen based on screen dimensions divided by noise size
 const vec2 noiseScale = vec2(1280.0/4.0, 720.0/4.0); 
@@ -20,7 +20,7 @@ uniform mat4 projection;
 void main()
 {
     // Get input for SSAO algorithm
-    vec3 fragPos = vec3(texelFetch(uSSAOGPosition, ivec2(gl_FragCoord.xy), 0));
+    vec3 fragPos = vec3(texelFetch(uSSAOGPosition, ivec2(gl_FragCoord.xy), 0))  / uSSAOGSceneSize;
     vec3 normal = vec3(texelFetch(uSSAOGNormal, ivec2(gl_FragCoord.xy), 0));
     //vec3 theNoise = vec3(texelFetch(uSSAOGTexNoise, ivec2(gl_FragCoord.xy), 0));
     vec3 randomVec = vec3(normalize(texelFetch(uSSAOGTexNoise, ivec2(gl_FragCoord.xy), 0)));
@@ -58,8 +58,8 @@ void main()
 
     //fColor = simpleSample;
     //fColor = occlusion;
-    //fColor = vec3(occlusion, occlusion, occlusion);
-    fColor = fragPos;
+    fColor = vec3(occlusion, occlusion, occlusion);
+    //fColor = fragPos;
     
 
 }
