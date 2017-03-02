@@ -141,6 +141,7 @@ private:
 
 	//SSAO framebuffers for SSAO processing
 	glmlv::GLProgram m_ssaoPass;
+    glmlv::GLProgram m_ssaoBlurPass;
     glmlv::GLProgram m_displaySSAOProgram;
 
     GLint m_uSSAOGDepthSamplerLocation;
