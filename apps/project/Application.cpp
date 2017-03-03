@@ -78,8 +78,10 @@ int Application::run()
             // We draw each shape by specifying how much indices it carries, and with an offset in the global index buffer
             for (const auto shape : m_shapes)
             {
+
                 const auto & material = shape.materialID >= 0 ? m_SceneMaterials[shape.materialID] : m_DefaultMaterial;
-                if (currentMaterial != &material)
+                
+				if (currentMaterial != &material)
                 {
                     bindMaterial(material);
                     currentMaterial = &material;
@@ -91,13 +93,116 @@ int Application::run()
                 glBindSampler(0, m_textureSampler);
         
             glBindVertexArray(0);
-            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+			//________________________________
+			//
+			// HERE BEGINS SHADOW VOLUME CODE !
+			//________________________________
+
+			/* Compute stencil buffer */
+			glDepthMask(GL_FALSE);
+			glColorMask(0, 0, 0, 0);
+
+			glEnable(GL_STENCIL_TEST);
+			glClearStencil(0.0f);
+			glStencilFunc(GL_ALWAYS, 128, 0xffffffff);
+
+			/* Define shadow volume edge */
+			std::vector<float> shadowVolumeVertices;
+
+			for (auto surface : m_surfaces)
+			{
+				if (glm::dot(surface.normal, m_DirLightDirection) == glm::length(surface.normal) * glm::length(m_DirLightDirection) * cos(0)
+					|| glm::dot(surface.normal, m_DirLightDirection) == glm::length(surface.normal) * glm::length(m_DirLightDirection) * cos(180)) {
+					for (size_t i = 0; i < 3; i++)
+					{
+						shadowVolumeVertices.push_back(surface.vertex[i].x);
+						shadowVolumeVertices.push_back(surface.vertex[i].y);
+						shadowVolumeVertices.push_back(surface.vertex[i].z);
+					}
+				}
+			}
+
+			/* Project edge to infinity */
+			size_t length = shadowVolumeVertices.size();
+			for (size_t i = 0; i < length; i += 3)
+			{
+				shadowVolumeVertices.push_back(shadowVolumeVertices[i + 0] - m_DirLightDirection.x * 500.f);
+				shadowVolumeVertices.push_back(shadowVolumeVertices[i + 1] - m_DirLightDirection.x * 500.f);
+				shadowVolumeVertices.push_back(shadowVolumeVertices[i + 2] - m_DirLightDirection.x * 500.f);
+			}
+
+			float test[] = { 0,0,0, -100,100,0, 100,100,0 };
+
+			/* Gen buffer */
+			glGenBuffers(1, &shadowVolumeVBO);
+			glBindBuffer(GL_ARRAY_BUFFER, shadowVolumeVBO);
+			glBufferStorage(GL_ARRAY_BUFFER, sizeof(shadowVolumeVertices.data()), shadowVolumeVertices.data(), 0);
+
+			glGenVertexArrays(1, &shadowVolumeVAO);
+			glBindVertexArray(shadowVolumeVAO);
+			glEnableVertexAttribArray(0);
+			glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+			glBindBuffer(GL_ARRAY_BUFFER, 0);
+			glBindVertexArray(0);
+
+			/* Shadow Volume pass 1 */
+			glFrontFace(GL_CW);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
+			glBindVertexArray(shadowVolumeVAO);
+			glUniform3f(m_uKaLocation, 0.f, 0.f, 0.f);
+			glDrawArrays(GL_TRIANGLES, 0, shadowVolumeVertices.size());
+			glUniform3f(m_uKaLocation, 0.f, 0.f, 0.f);
+			glBindVertexArray(0);
+
+			/* Shadow Volume pass 2 */
+			glFrontFace(GL_CCW);
+			glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
+			glBindVertexArray(shadowVolumeVAO);
+			glUniform3f(m_uKaLocation, 0.f, 0.f, 0.f);
+			glDrawArrays(GL_TRIANGLES, 0, shadowVolumeVertices.size());
+			glUniform3f(m_uKaLocation, 1.f, 1.f, 1.f);
+			glBindVertexArray(0);
+
+			glDisable(GL_STENCIL_TEST);
+
+			glDepthMask(GL_TRUE);
+			glColorMask(1, 1, 1, 1);
+			
+			// Draw black triangle with stencil buffer to draw shadows ?
+			GLuint testVBO;
+			GLuint testVAO;
+			float test1[] = { -1, -1, 3, -1, -1, 3 };
+
+			/* Gen buffer */
+			glGenBuffers(1, &testVBO);
+			glBindBuffer(GL_ARRAY_BUFFER, testVBO);
+			glBufferStorage(GL_ARRAY_BUFFER, sizeof(test1), test1, 0);
+
+			glGenVertexArrays(1, &testVAO);
+			glBindVertexArray(testVAO);
+			glEnableVertexAttribArray(0);
+			glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+			glBindVertexArray(testVAO);
+			glUniform3f(m_uKaLocation, 0.f, 0.f, 0.f);
+			glDrawArrays(GL_TRIANGLES, 0, 9);
+			glUniform3f(m_uKaLocation, 0.f, 0.f, 0.f);
+			glBindVertexArray(0);
+
+			//________________________________
+			//
+			// HERE ENDS SHADOW VOLUME CODE !
+			//________________________________
+
+			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
         }
 
         // Put here rendering code
         const auto viewportSize = m_GLFWHandle.framebufferSize();
         glViewport(0, 0, viewportSize.x, viewportSize.y);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);	
 
         if (m_CurrentlyDisplayed == GBufferTextureCount) // Beauty
         {
@@ -115,7 +220,6 @@ int Application::run()
                 {
                     glActiveTexture(GL_TEXTURE0 + i);
                     glBindTexture(GL_TEXTURE_2D, m_GBufferTextures[i]);
-
                     glUniform1i(m_uGBufferSamplerLocations[i], i);
                 }
 
@@ -137,6 +241,20 @@ int Application::run()
             glDrawArrays(GL_TRIANGLES, 0, 3);
             glBindVertexArray(0);
         }
+		else if (m_CurrentlyDisplayed == GStencil)
+		{
+			m_displayStencilProgram.use();
+
+
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, m_GBufferTextures[GStencil]);
+
+			glUniform1i(m_uGStencilSamplerLocation, 0);
+
+			glBindVertexArray(m_TriangleVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 3);
+			glBindVertexArray(0);
+		}
         else if (m_CurrentlyDisplayed == GPosition)
         {
             m_displayPositionProgram.use();
@@ -168,6 +286,22 @@ int Application::run()
             glBindFramebuffer(GL_READ_FRAMEBUFFER, 0);
         }
         
+		GLuint TriangleVBO = 0;
+		GLuint TriangleVAO = 0;
+
+		glGenBuffers(1, &TriangleVBO);
+		glBindBuffer(GL_ARRAY_BUFFER, TriangleVBO);
+
+		GLfloat data[] = { -1, -1, 3, -1, -1, 3 };
+		glBufferStorage(GL_ARRAY_BUFFER, sizeof(data), data, 0);
+
+		glGenVertexArrays(1, &TriangleVAO);
+		glBindVertexArray(TriangleVAO);
+		glEnableVertexAttribArray(0);
+		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
+
+		glBindBuffer(GL_ARRAY_BUFFER, 0);
+		glBindVertexArray(0);
 
         // GUI code:
         ImGui_ImplGlfwGL3_NewFrame();
@@ -266,6 +400,7 @@ Application::Application(int argc, char** argv):
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, m_GBufferTextures[i], 0);
     }
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_GBufferTextures[GDepth], 0);
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, m_GBufferTextures[GStencil], 0);
 
     // we will write into 5 textures from the fragment shader
     GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
@@ -332,6 +467,51 @@ void Application::initScene()
             shape.indexOffset = indexOffset;
             shape.materialID = data.materialIDPerShape[shapeID];
             indexOffset += shape.indexCount;
+
+			for (size_t i = 0; i < shape.indexCount; i += 3)
+			{
+				SurfaceInfo currentSurface = SurfaceInfo();
+				
+				currentSurface.index[0] = data.indexBuffer[i + 0];
+				currentSurface.index[1] = data.indexBuffer[i + 1];
+				currentSurface.index[2] = data.indexBuffer[i + 2];
+
+				glm::vec3 facePts[3];
+				currentSurface.vertex[0] = data.vertexBuffer[currentSurface.index[0]].position;
+				currentSurface.vertex[1] = data.vertexBuffer[currentSurface.index[1]].position;
+				currentSurface.vertex[2] = data.vertexBuffer[currentSurface.index[2]].position;
+
+				// face normal computation
+				glm::vec3 u = currentSurface.vertex[1] - currentSurface.vertex[0];
+				glm::vec3 v = currentSurface.vertex[2] - currentSurface.vertex[0];
+
+				glm::vec3 faceNormal = glm::cross(u, v);
+				currentSurface.normal = faceNormal;
+
+				m_surfaces.push_back(currentSurface);
+			}
+
+			/*for (auto surface1 : m_surfaces)
+			{
+				for (const auto surface2 : m_surfaces)
+				{
+					std::vector<unsigned int> edgeIndex;
+					for (size_t i = 0; i < 3; i++)
+					{
+						for (size_t j = 0; j < 3; j++)
+						{
+							if (i != j
+								&& surface1.index[i] == surface2.index[i]
+								&& surface1.index[j] == surface2.index[j]){
+								surface1.neighbours.push_back(&surface2);
+								surface1.edges.push_back(surface1.vertex[i]);
+								surface1.edges.push_back(surface1.vertex[j]);
+							}
+						}
+					}
+				}
+			}*/
+
         }
 
         glGenTextures(1, &m_WhiteTexture);
@@ -445,6 +625,9 @@ void Application::initShadersData()
     m_displayDepthProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "shadingPass.vs.glsl", m_ShadersRootPath / m_AppName / "displayDepth.fs.glsl" });
 
     m_uGDepthSamplerLocation = glGetUniformLocation(m_displayDepthProgram.glId(), "uGDepth");
+
+	m_displayStencilProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "shadingPass.vs.glsl", m_ShadersRootPath / m_AppName / "displayStencil.fs.glsl" });
+	m_uGStencilSamplerLocation = glGetUniformLocation(m_displayDepthProgram.glId(), "uGStencil");
 
     m_displayPositionProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "shadingPass.vs.glsl", m_ShadersRootPath / m_AppName / "displayPosition.fs.glsl" });
 

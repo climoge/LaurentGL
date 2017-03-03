@@ -48,11 +48,12 @@ private:
         GDiffuse,
         GGlossyShininess,
         GDepth,
+		GStencil,
         GBufferTextureCount
     };
 
-    const char * m_GBufferTexNames[GBufferTextureCount + 1] = { "position", "normal", "ambient", "diffuse", "glossyShininess", "depth", "beauty" }; // Tricks, since we cant blit depth, we use its value to draw the result of the shading pass
-    const GLenum m_GBufferTextureFormat[GBufferTextureCount] = { GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGBA32F, GL_DEPTH_COMPONENT32F };
+    const char * m_GBufferTexNames[GBufferTextureCount + 1] = { "position", "normal", "ambient", "diffuse", "glossyShininess", "depth", "stencil", "beauty" }; // Tricks, since we cant blit depth, we use its value to draw the result of the shading pass
+    const GLenum m_GBufferTextureFormat[GBufferTextureCount] = { GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGBA32F, GL_DEPTH_COMPONENT32F, GL_DEPTH24_STENCIL8 };
     GLuint m_GBufferTextures[GBufferTextureCount];
     GLuint m_GBufferFBO; // Framebuffer object
 
@@ -74,6 +75,19 @@ private:
         uint32_t indexOffset; // Offset in GPU index buffer
         int materialID = -1;
     };
+
+	GLuint shadowVolumeVBO = 0;
+	GLuint shadowVolumeVAO = 0;
+
+	struct SurfaceInfo
+	{
+		GLuint index[3];
+		glm::vec3 vertex[3];
+		glm::vec3 normal;
+		std::vector<SurfaceInfo*> neighbours;
+		std::vector<glm::vec3> edges;
+	};
+	std::vector<SurfaceInfo> m_surfaces;
 
     std::vector<ShapeInfo> m_shapes; // For each shape of the scene, its number of indices
     glm::vec3 m_SceneSize = glm::vec3(0.f); // Used for camera speed and projection matrix parameters
@@ -106,6 +120,7 @@ private:
     glmlv::GLProgram m_geometryPassProgram;
     glmlv::GLProgram m_shadingPassProgram;
     glmlv::GLProgram m_displayDepthProgram;
+	glmlv::GLProgram m_displayStencilProgram;
     glmlv::GLProgram m_displayPositionProgram;
 
     // Geometry pass uniforms
@@ -130,6 +145,9 @@ private:
 
     // Display depth pass uniforms
     GLint m_uGDepthSamplerLocation;
+
+	// Display stencil pass uniforms
+	GLint m_uGStencilSamplerLocation;
 
     // Display position pass uniforms
     GLint m_uGPositionSamplerLocation;
