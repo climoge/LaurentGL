@@ -9,8 +9,8 @@ uniform vec3 samples[64];
 out vec3 fColor;
 
 int kernelSize = 64;
-float radius = 1;
-float bias = 0.05;
+float radius = 0.5;
+float bias = 0.025;
 
 // tile noise texture over screen based on screen dimensions divided by noise size
 const vec2 noiseScale = vec2(1280.0/4.0, 720.0/4.0); 
@@ -55,7 +55,7 @@ void main()
             
     }
     occlusion = 1.0 - (occlusion / kernelSize);
-
+    occlusion = pow(occlusion, 3);
     //fColor = simpleSample;
     //fColor = occlusion;
     fColor = vec3(occlusion, occlusion, occlusion);

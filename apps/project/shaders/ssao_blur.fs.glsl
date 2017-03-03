@@ -12,10 +12,8 @@ void main() {
         {
             vec2 offset = vec2(float(x), float(y)) * texelSize;
             result += vec3(texelFetch(ssaoInput, ivec2(gl_FragCoord.xy + offset.xy), 0)).r;
-            //result += texture(ssaoInput, gl_FragCoord + offset).r;
-            //vec3(texelFetch(uSSAOGNormal, ivec2(gl_FragCoord.xy), 0));
         }
     }
-    result = result / (4.0 * 4.0);
+    result = result / (16.0);
     fragColor = vec3(result, result, result);
 }  

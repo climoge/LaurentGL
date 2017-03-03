@@ -171,7 +171,9 @@ int Application::run()
                 glUniform3fv(m_uPointLightPositionLocation, 1, glm::value_ptr(glm::vec3(viewMatrix * glm::vec4(m_PointLightPosition, 1))));
                 glUniform3fv(m_uPointLightIntensityLocation, 1, glm::value_ptr(m_PointLightColor * m_PointLightIntensity));
 
-                for (int32_t i = GPosition; i < GDepth; ++i)
+                int32_t i;
+
+                for (i = GPosition; i < GDepth; ++i)
                 {
                     glActiveTexture(GL_TEXTURE0 + i);
                     glBindTexture(GL_TEXTURE_2D, m_GBufferTextures[i]);
@@ -218,11 +220,36 @@ int Application::run()
             glBindVertexArray(0);
         }
 
-
+        //beauty + ssao
         else if (m_CurrentlyDisplayed == GSSAO)
         {
+            m_displaySSAOProgram.use();
 
-             m_displaySSAOProgram.use();
+                glUniform3fv(glGetUniformLocation(m_displaySSAOProgram.glId(), "uDirectionalLightDir"), 1, glm::value_ptr(glm::vec3(viewMatrix * glm::vec4(glm::normalize(m_DirLightDirection), 0))));
+                glUniform3fv(glGetUniformLocation(m_displaySSAOProgram.glId(), "uDirectionalLightIntensity"), 1, glm::value_ptr(m_DirLightColor * m_DirLightIntensity));
+
+                glUniform3fv(glGetUniformLocation(m_displaySSAOProgram.glId(), "uPointLightPosition"), 1, glm::value_ptr(glm::vec3(viewMatrix * glm::vec4(m_PointLightPosition, 1))));
+                glUniform3fv(glGetUniformLocation(m_displaySSAOProgram.glId(), "uPointLightIntensity"), 1, glm::value_ptr(m_PointLightColor * m_PointLightIntensity));
+
+                int32_t i;
+
+                for (i = GPosition; i < GDepth; ++i)
+                {
+                    glActiveTexture(GL_TEXTURE0 + i);
+                    glBindTexture(GL_TEXTURE_2D, m_GBufferTextures[i]);
+
+                    glUniform1i(m_uGBufferSamplerLocations[i], i);
+                }
+                i++;
+               glActiveTexture(GL_TEXTURE0 + i);
+                glBindTexture(GL_TEXTURE_2D, m_ssaoColorBufferBlur);
+                glUniform1i(glGetUniformLocation(m_displaySSAOProgram.glId(), "uGSSAO"),i);
+
+                glBindVertexArray(m_TriangleVAO);
+                glDrawArrays(GL_TRIANGLES, 0, 3);
+                glBindVertexArray(0);
+
+            /* m_displaySSAOProgram.use();
 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, m_ssaoColorBufferBlur);
@@ -230,7 +257,8 @@ int Application::run()
 
             glBindVertexArray(m_TriangleVAO);
             glDrawArrays(GL_TRIANGLES, 0, 3);
-            glBindVertexArray(0);
+            glBindVertexArray(0);*/
+
         }
         else
         {
