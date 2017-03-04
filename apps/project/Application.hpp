@@ -96,6 +96,7 @@ private:
     };
 
     GLuint m_WhiteTexture; // A white 1x1 texture
+    GLuint m_BlackTexture; // A black 1x1 texture
     PhongMaterial m_DefaultMaterial;
     std::vector<PhongMaterial> m_SceneMaterials;
 
@@ -117,6 +118,7 @@ private:
     GLint m_uKaLocation;
     GLint m_uKdLocation;
     GLint m_uKsLocation;
+    GLint m_uCameraPositionLocation;
     GLint m_uNormalLocation;
     GLint m_uShininessLocation;
     GLint m_uKaSamplerLocation;

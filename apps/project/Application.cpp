@@ -32,8 +32,9 @@ int Application::run()
             glViewport(0, 0, m_nWindowWidth, m_nWindowHeight);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            const auto modelMatrix = glm::scale(glm::mat4(), glm::vec3(0.05f, 0.05f, 0.05f));
-
+            //const auto modelMatrix = glm::scale(glm::mat4(), glm::vec3(0.05f, 0.05f, 0.05f)); // Used for cube.obj
+            
+            const auto modelMatrix = glm::mat4();
             const auto mvMatrix = viewMatrix * modelMatrix;
             const auto mvpMatrix = projMatrix * mvMatrix;
             const auto normalMatrix = glm::transpose(glm::inverse(mvMatrix));
@@ -41,6 +42,7 @@ int Application::run()
             glUniformMatrix4fv(m_uModelViewProjMatrixLocation, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
             glUniformMatrix4fv(m_uModelViewMatrixLocation, 1, GL_FALSE, glm::value_ptr(mvMatrix));
             glUniformMatrix4fv(m_uNormalMatrixLocation, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+            glUniform3f(m_uCameraPositionLocation, viewMatrix[3][0], viewMatrix[3][1], viewMatrix[3][2]);
 
             // Same sampler for all texture units
             glBindSampler(0, m_textureSampler);
@@ -60,8 +62,8 @@ int Application::run()
                 glUniform3fv(m_uKaLocation, 1, glm::value_ptr(material.Ka));
                 glUniform3fv(m_uKdLocation, 1, glm::value_ptr(material.Kd));
                 glUniform3fv(m_uKsLocation, 1, glm::value_ptr(material.Ks));
-                glUniform3fv(m_uNormalLocation, 1, glm::value_ptr(material.normal));
                 glUniform1fv(m_uShininessLocation, 1, &material.shininess);
+                glUniform3fv(m_uNormalLocation, 1, glm::value_ptr(material.normal));
 
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, material.KaTextureId);
@@ -102,6 +104,7 @@ int Application::run()
         const auto viewportSize = m_GLFWHandle.framebufferSize();
         glViewport(0, 0, viewportSize.x, viewportSize.y);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glHint(GL_FRAGMENT_SHADER_DERIVATIVE_HINT,  GL_FASTEST );
 
         if (m_CurrentlyDisplayed == GBufferTextureCount) // Beauty
         {
@@ -252,6 +255,7 @@ Application::Application(int argc, char** argv):
     initShadersData();
 
     glEnable(GL_DEPTH_TEST);
+    glHint(GL_FRAGMENT_SHADER_DERIVATIVE_HINT,  GL_FASTEST );
     m_viewController.setSpeed(m_SceneSizeLength * 0.1f); // Let's travel 10% of the scene per second
 
     // Init GBuffer
@@ -305,7 +309,7 @@ void Application::initScene()
     glGenBuffers(1, &m_SceneIBO);
 
     {
-        const auto objPath = m_AssetsRootPath / "glmlv" / "models" / "crytek-sponza" / "cube.obj";
+        const auto objPath = m_AssetsRootPath / "glmlv" / "models" / "crytek-sponza" / "sponza.obj";
         glmlv::ObjData data;
         loadObj(objPath, data);
         m_SceneSize = data.bboxMax - data.bboxMin;
@@ -344,6 +348,13 @@ void Application::initScene()
         glm::vec4 white(1.f, 1.f, 1.f, 1.f);
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 1, 1, GL_RGBA, GL_FLOAT, &white);
         glBindTexture(GL_TEXTURE_2D, 0);
+        
+        glGenTextures(1, &m_BlackTexture);
+        glBindTexture(GL_TEXTURE_2D, m_BlackTexture);
+        glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, 1, 1);
+        glm::vec4 black(0.f, 0.f, 0.f, 0.f);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 1, 1, GL_RGBA, GL_FLOAT, &black);
+        glBindTexture(GL_TEXTURE_2D, 0);
 
         // Upload all textures to the GPU
         std::vector<GLint> textureIds;
@@ -370,9 +381,8 @@ void Application::initScene()
             newMaterial.KaTextureId = material.KaTextureId >= 0 ? textureIds[material.KaTextureId] : m_WhiteTexture;
             newMaterial.KdTextureId = material.KdTextureId >= 0 ? textureIds[material.KdTextureId] : m_WhiteTexture;
             newMaterial.KsTextureId = material.KsTextureId >= 0 ? textureIds[material.KsTextureId] : m_WhiteTexture;
-            std::cout << "Normal texture : " << material.normalTextureId << std::endl;
-            newMaterial.normalTextureId = material.normalTextureId >= 0 ? textureIds[material.normalTextureId] : m_WhiteTexture;
             newMaterial.shininessTextureId = material.shininessTextureId >= 0 ? textureIds[material.shininessTextureId] : m_WhiteTexture;
+            newMaterial.normalTextureId = material.normalTextureId >= 0 ? textureIds[material.normalTextureId] : m_BlackTexture;
 
             m_SceneMaterials.emplace_back(newMaterial);
         }
@@ -432,6 +442,7 @@ void Application::initShadersData()
     m_uKsLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uKs");
     m_uNormalLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uNormal");
     m_uShininessLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uShininess");
+    m_uCameraPositionLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uCameraPosition");
     m_uKaSamplerLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uKaSampler");
     m_uKdSamplerLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uKdSampler");
     m_uKsSamplerLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uKsSampler");

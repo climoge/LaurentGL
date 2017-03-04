@@ -9,6 +9,4 @@ newmtl cube
   Kd 0.5880 0.5880 0.5880
   Ks 0.0000 0.0000 0.0000
   Ke 0.0000 0.0000 0.0000
-  map_Ka textures\cube_normal.png
-  map_Kd textures\cube_normal.png
-  map_normal textures\cube_normal.png
+  norm textures\cube_normal.png

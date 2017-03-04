@@ -103,11 +103,13 @@ void loadObj(const fs::path & objPath, const fs::path & mtlBaseDir, ObjData & da
         // Only load textures that are used
         if (localMaterialID >= 0)
         {
+			std::cout << "Local id " << localMaterialID << std::endl;
             const auto & material = materials[localMaterialID];
             texturePaths.emplace(material.ambient_texname);
             texturePaths.emplace(material.diffuse_texname);
             texturePaths.emplace(material.specular_texname);
             texturePaths.emplace(material.specular_highlight_texname);
+            texturePaths.emplace(material.normal_texname);
         }
     }
 
@@ -149,7 +151,7 @@ void loadObj(const fs::path & objPath, const fs::path & mtlBaseDir, ObjData & da
         newMaterial.Kd = glm::vec3(material.diffuse[0], material.diffuse[1], material.diffuse[2]);
         newMaterial.Ks = glm::vec3(material.specular[0], material.specular[1], material.specular[2]);
         newMaterial.shininess = material.shininess;
-
+		
         if (!material.ambient_texname.empty()) {
             const auto it = textureIdMap.find(material.ambient_texname);
             newMaterial.KaTextureId = it != end(textureIdMap) ? (*it).second : -1;
@@ -161,6 +163,10 @@ void loadObj(const fs::path & objPath, const fs::path & mtlBaseDir, ObjData & da
         if (!material.specular_texname.empty()) {
             const auto it = textureIdMap.find(material.specular_texname);
             newMaterial.KsTextureId = it != end(textureIdMap) ? (*it).second : -1;
+        }
+        if (!material.normal_texname.empty()) {
+            const auto it = textureIdMap.find(material.normal_texname);
+            newMaterial.normalTextureId = it != end(textureIdMap) ? (*it).second : -1;
         }
         if (!material.specular_highlight_texname.empty()) {
             const auto it = textureIdMap.find(material.specular_highlight_texname);
