@@ -21,7 +21,6 @@ void main()
     vec3 normal = vec3(texelFetch(uGNormal, ivec2(gl_FragCoord.xy), 0));
 
     vec3 ka = vec3(texelFetch(uGAmbient, ivec2(gl_FragCoord.xy), 0));
-    ka = vec3(0,0,0);
     vec3 kd = vec3(texelFetch(uGDiffuse, ivec2(gl_FragCoord.xy), 0));
     vec4 ksShininess = texelFetch(uGGlossyShininess, ivec2(gl_FragCoord.xy), 0);
     vec3 ks = ksShininess.rgb;
@@ -49,18 +48,4 @@ void main()
     fColor = ka;
     fColor += kd * (uDirectionalLightIntensity * max(0.f, dot(normal, uDirectionalLightDir)) + pointLightIncidentLight * max(0., dot(normal, dirToPointLight)));
     fColor += ks * (uDirectionalLightIntensity * dothDirLight + pointLightIncidentLight * dothPointLight);
-    
-    
-    
-    /*vec3 wi = uPointLightPosition - position;
-    vec3 wo = normalize(-position);
-    wi = normalize(wi);
-    float d = distance(uPointLightPosition, position);
-    float Li = uPointLightIntensity / (d*d);
-    vec3 halfVector = (wo + wi) * 0.5;
-    //fColor = normal;
-    //fColor = hDirLight;
-    float dotProduct = max(0, dot(halfVector, normal));
-    fColor = vec3(dotProduct, dotProduct, dotProduct);
-    fColor = normal;*/
 }

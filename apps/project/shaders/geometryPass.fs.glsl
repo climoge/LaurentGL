@@ -51,39 +51,25 @@ vec3 perturb_normal( vec3 N, vec3 V, vec2 texcoord )
 {
     // assume N, the interpolated vertex normal and 
     // V, the view vector (vertex to eye)
-    vec3 map = texture( uNormalSampler, vTexCoords ).xyz;
-    //map = map * 255./127. - 128./127.;
+    vec3 map = texture2D( uNormalSampler, vTexCoords ).xyz;
+    map = map * 255./127. - 128./127.;
     mat3 TBN = cotangent_frame( N, -V, texcoord );
-    return normalize( TBN * map );
+    return TBN * map;
 }
 
 void main()
 {
     fPosition = vViewSpacePosition;
-    //fNormal = normalize(vViewSpaceNormal);
     vec3 normalMapTexel = vec3(texture(uNormalSampler, vTexCoords));
-    //normalMapTexel = (2*normalMapTexel)-1;
     
     if(normalMapTexel != vec3(0, 0, 0)){
-		//fNormal = mat3(vViewSpaceNormal, vec3(0), vec3(0)) * normalMapTexel;
-		//fNormal = normalize(normalMapTexel) * vViewSpaceNormal;
-		//fNormal = normalMapTexel * normalize(vViewSpaceNormal);
-		//fNormal = normalize(vViewSpaceNormal) * inverse(normalMapTexel);
 		fNormal = normalize( vViewSpaceNormal );
-
 		fNormal = perturb_normal( fNormal, vViewDirection, vTexCoords );
-		//fNormal = vec3(0,0,0);
-		//fNormal = normalMapTexel;
-		//fNormal = vec3(vNormalMatrix * vec4(normalMapTexel, 0));
-		//fNormal = normalize(fNormal);
-		//fNormal = perturb_normal(normal, eyeDir, vTexCoords);
-		//fNormal = normalize(cross(vViewSpaceNormal , normalMapTexel));
-		//fNormal = vViewDirection;
+		fNormal = normalize(fNormal);
 	}
 	else{
 		fNormal = normalize(vViewSpaceNormal);
 	}
-	fNormal = normalize(vViewSpaceNormal);
 	
     vec3 ka = uKa * vec3(texture(uKaSampler, vTexCoords));
     vec3 kd = uKd * vec3(texture(uKdSampler, vTexCoords));
