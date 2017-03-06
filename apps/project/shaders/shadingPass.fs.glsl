@@ -6,6 +6,7 @@ uniform sampler2D uGNormal;
 uniform sampler2D uGAmbient;
 uniform sampler2D uGDiffuse;
 uniform sampler2D uGGlossyShininess;
+uniform sampler2D uGStencil;
 
 out vec3 fColor;
 

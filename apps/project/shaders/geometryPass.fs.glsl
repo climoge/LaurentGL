@@ -9,6 +9,7 @@ layout(location = 1) out vec3 fNormal;
 layout(location = 2) out vec3 fAmbient;
 layout(location = 3) out vec3 fDiffuse;
 layout(location = 4) out vec4 fGlossyShininess;
+layout(location = 5) out vec3 fStencil;
 
 uniform vec3 uDirectionalLightDir;
 uniform vec3 uDirectionalLightIntensity;

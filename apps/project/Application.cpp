@@ -7,11 +7,11 @@
 #include <imgui.h>
 #include <glmlv/imgui_impl_glfw_gl3.hpp>
 #include <glmlv/Image2DRGBA.hpp>
-#include <glmlv/load_obj.hpp>
 
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/io.hpp>
+
 
 int Application::run()
 {
@@ -41,18 +41,6 @@ int Application::run()
             glUniformMatrix4fv(m_uModelViewProjMatrixLocation, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
             glUniformMatrix4fv(m_uModelViewMatrixLocation, 1, GL_FALSE, glm::value_ptr(mvMatrix));
             glUniformMatrix4fv(m_uNormalMatrixLocation, 1, GL_FALSE, glm::value_ptr(normalMatrix));
-
-            // Same sampler for all texture units
-            glBindSampler(0, m_textureSampler);
-            glBindSampler(1, m_textureSampler);
-            glBindSampler(2, m_textureSampler);
-            glBindSampler(3, m_textureSampler);
-
-            // Set texture unit of each sampler
-            glUniform1i(m_uKaSamplerLocation, 0);
-            glUniform1i(m_uKdSamplerLocation, 1);
-            glUniform1i(m_uKsSamplerLocation, 2);
-            glUniform1i(m_uShininessSamplerLocation, 3);
 
             const auto bindMaterial = [&](const PhongMaterial & material)
             {
@@ -93,110 +81,16 @@ int Application::run()
                 glBindSampler(0, m_textureSampler);
         
             glBindVertexArray(0);
-
-			//________________________________
-			//
-			// HERE BEGINS SHADOW VOLUME CODE !
-			//________________________________
-
-			/* Compute stencil buffer */
-			glDepthMask(GL_FALSE);
-			glColorMask(0, 0, 0, 0);
-
-			glEnable(GL_STENCIL_TEST);
-			glClearStencil(0.0f);
-			glStencilFunc(GL_ALWAYS, 128, 0xffffffff);
-
-			/* Define shadow volume edge */
-			std::vector<float> shadowVolumeVertices;
-
-			for (auto surface : m_surfaces)
-			{
-				if (glm::dot(surface.normal, m_DirLightDirection) == glm::length(surface.normal) * glm::length(m_DirLightDirection) * cos(0)
-					|| glm::dot(surface.normal, m_DirLightDirection) == glm::length(surface.normal) * glm::length(m_DirLightDirection) * cos(180)) {
-					for (size_t i = 0; i < 3; i++)
-					{
-						shadowVolumeVertices.push_back(surface.vertex[i].x);
-						shadowVolumeVertices.push_back(surface.vertex[i].y);
-						shadowVolumeVertices.push_back(surface.vertex[i].z);
-					}
-				}
-			}
-
-			/* Project edge to infinity */
-			size_t length = shadowVolumeVertices.size();
-			for (size_t i = 0; i < length; i += 3)
-			{
-				shadowVolumeVertices.push_back(shadowVolumeVertices[i + 0] - m_DirLightDirection.x * 500.f);
-				shadowVolumeVertices.push_back(shadowVolumeVertices[i + 1] - m_DirLightDirection.x * 500.f);
-				shadowVolumeVertices.push_back(shadowVolumeVertices[i + 2] - m_DirLightDirection.x * 500.f);
-			}
-
-			float test[] = { 0,0,0, -100,100,0, 100,100,0 };
-
-			/* Gen buffer */
-			glGenBuffers(1, &shadowVolumeVBO);
-			glBindBuffer(GL_ARRAY_BUFFER, shadowVolumeVBO);
-			glBufferStorage(GL_ARRAY_BUFFER, sizeof(shadowVolumeVertices.data()), shadowVolumeVertices.data(), 0);
-
-			glGenVertexArrays(1, &shadowVolumeVAO);
-			glBindVertexArray(shadowVolumeVAO);
-			glEnableVertexAttribArray(0);
-			glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-			glBindBuffer(GL_ARRAY_BUFFER, 0);
-			glBindVertexArray(0);
-
-			/* Shadow Volume pass 1 */
-			glFrontFace(GL_CW);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_INCR);
-			glBindVertexArray(shadowVolumeVAO);
-			glUniform3f(m_uKaLocation, 0.f, 0.f, 0.f);
-			glDrawArrays(GL_TRIANGLES, 0, shadowVolumeVertices.size());
-			glUniform3f(m_uKaLocation, 0.f, 0.f, 0.f);
-			glBindVertexArray(0);
-
-			/* Shadow Volume pass 2 */
-			glFrontFace(GL_CCW);
-			glStencilOp(GL_KEEP, GL_KEEP, GL_DECR);
-			glBindVertexArray(shadowVolumeVAO);
-			glUniform3f(m_uKaLocation, 0.f, 0.f, 0.f);
-			glDrawArrays(GL_TRIANGLES, 0, shadowVolumeVertices.size());
-			glUniform3f(m_uKaLocation, 1.f, 1.f, 1.f);
-			glBindVertexArray(0);
-
-			glDisable(GL_STENCIL_TEST);
-
-			glDepthMask(GL_TRUE);
-			glColorMask(1, 1, 1, 1);
-			
-			// Draw black triangle with stencil buffer to draw shadows ?
-			GLuint testVBO;
-			GLuint testVAO;
-			float test1[] = { -1, -1, 3, -1, -1, 3 };
-
-			/* Gen buffer */
-			glGenBuffers(1, &testVBO);
-			glBindBuffer(GL_ARRAY_BUFFER, testVBO);
-			glBufferStorage(GL_ARRAY_BUFFER, sizeof(test1), test1, 0);
-
-			glGenVertexArrays(1, &testVAO);
-			glBindVertexArray(testVAO);
-			glEnableVertexAttribArray(0);
-			glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 0, 0);
-
-			glBindVertexArray(testVAO);
-			glUniform3f(m_uKaLocation, 0.f, 0.f, 0.f);
-			glDrawArrays(GL_TRIANGLES, 0, 9);
-			glUniform3f(m_uKaLocation, 0.f, 0.f, 0.f);
-			glBindVertexArray(0);
-
-			//________________________________
-			//
-			// HERE ENDS SHADOW VOLUME CODE !
-			//________________________________
-
 			glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
+
+			m_silhouetteProgram.use();
+
+			glUniformMatrix4fv(m_ugWVPLocation, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
+			glUniformMatrix4fv(m_ugWorldLocation, 1, GL_FALSE, glm::value_ptr(mvMatrix));
+			glUniform3fv(m_uLightPos, 1, glm::value_ptr(glm::vec3(viewMatrix * glm::vec4(m_PointLightPosition, 1))));
+			
+
+
         }
 
         // Put here rendering code
@@ -400,11 +294,11 @@ Application::Application(int argc, char** argv):
         glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT0 + i, GL_TEXTURE_2D, m_GBufferTextures[i], 0);
     }
     glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, m_GBufferTextures[GDepth], 0);
-	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_TEXTURE_2D, m_GBufferTextures[GStencil], 0);
+	glFramebufferTexture2D(GL_DRAW_FRAMEBUFFER, GL_COLOR_ATTACHMENT5, GL_TEXTURE_2D, m_GBufferTextures[GStencil], 0);
 
     // we will write into 5 textures from the fragment shader
-    GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4 };
-    glDrawBuffers(5, drawBuffers);
+    GLenum drawBuffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5 };
+    glDrawBuffers(6, drawBuffers);
 
     GLenum status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
 
@@ -438,9 +332,12 @@ void Application::initScene()
     {
         const auto objPath = m_AssetsRootPath / "glmlv" / "models" / "crytek-sponza" / "sponza.obj";
         glmlv::ObjData data;
+		
         loadObj(objPath, data);
         m_SceneSize = data.bboxMax - data.bboxMin;
         m_SceneSizeLength = glm::length(m_SceneSize);
+
+		m_meshes.swap(data.meshes);
 
         std::cout << "# of shapes    : " << data.shapeCount << std::endl;
         std::cout << "# of materials : " << data.materialCount << std::endl;
@@ -467,51 +364,6 @@ void Application::initScene()
             shape.indexOffset = indexOffset;
             shape.materialID = data.materialIDPerShape[shapeID];
             indexOffset += shape.indexCount;
-
-			for (size_t i = 0; i < shape.indexCount; i += 3)
-			{
-				SurfaceInfo currentSurface = SurfaceInfo();
-				
-				currentSurface.index[0] = data.indexBuffer[i + 0];
-				currentSurface.index[1] = data.indexBuffer[i + 1];
-				currentSurface.index[2] = data.indexBuffer[i + 2];
-
-				glm::vec3 facePts[3];
-				currentSurface.vertex[0] = data.vertexBuffer[currentSurface.index[0]].position;
-				currentSurface.vertex[1] = data.vertexBuffer[currentSurface.index[1]].position;
-				currentSurface.vertex[2] = data.vertexBuffer[currentSurface.index[2]].position;
-
-				// face normal computation
-				glm::vec3 u = currentSurface.vertex[1] - currentSurface.vertex[0];
-				glm::vec3 v = currentSurface.vertex[2] - currentSurface.vertex[0];
-
-				glm::vec3 faceNormal = glm::cross(u, v);
-				currentSurface.normal = faceNormal;
-
-				m_surfaces.push_back(currentSurface);
-			}
-
-			/*for (auto surface1 : m_surfaces)
-			{
-				for (const auto surface2 : m_surfaces)
-				{
-					std::vector<unsigned int> edgeIndex;
-					for (size_t i = 0; i < 3; i++)
-					{
-						for (size_t j = 0; j < 3; j++)
-						{
-							if (i != j
-								&& surface1.index[i] == surface2.index[i]
-								&& surface1.index[j] == surface2.index[j]){
-								surface1.neighbours.push_back(&surface2);
-								surface1.edges.push_back(surface1.vertex[i]);
-								surface1.edges.push_back(surface1.vertex[j]);
-							}
-						}
-					}
-				}
-			}*/
-
         }
 
         glGenTextures(1, &m_WhiteTexture);
@@ -589,6 +441,37 @@ void Application::initScene()
     glGenSamplers(1, &m_textureSampler);
     glSamplerParameteri(m_textureSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glSamplerParameteri(m_textureSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	std::cout << "create adjacency buffer !" << std::endl;
+	createAdjacencyIndexBuffer();
+	std::cout << "Adjacency buffer created !" << std::endl;
+	glGenBuffers(1, &m_SceneAdjacencyIBO);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_SceneAdjacencyIBO);
+	glBufferStorage(GL_ARRAY_BUFFER, m_indexAdjacencyBuffer.size() * sizeof(uint32_t), m_indexAdjacencyBuffer.data(), 0);
+	glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+	// Fill VAO
+	glGenVertexArrays(1, &m_SceneAdjacencyVAO);
+	glBindVertexArray(m_SceneAdjacencyVAO);
+
+	// We tell OpenGL what vertex attributes our VAO is describing:
+	glEnableVertexAttribArray(positionAttrLocation);
+	glEnableVertexAttribArray(normalAttrLocation);
+	glEnableVertexAttribArray(texCoordsAttrLocation);
+
+	glBindBuffer(GL_ARRAY_BUFFER, m_SceneVBO); // We bind the VBO because the next 3 calls will read what VBO is bound in order to know where the data is stored
+
+	glVertexAttribPointer(positionAttrLocation, 3, GL_FLOAT, GL_FALSE, sizeof(glmlv::Vertex3f3f2f), (const GLvoid*)offsetof(glmlv::Vertex3f3f2f, position));
+	glVertexAttribPointer(normalAttrLocation, 3, GL_FLOAT, GL_FALSE, sizeof(glmlv::Vertex3f3f2f), (const GLvoid*)offsetof(glmlv::Vertex3f3f2f, normal));
+	glVertexAttribPointer(texCoordsAttrLocation, 2, GL_FLOAT, GL_FALSE, sizeof(glmlv::Vertex3f3f2f), (const GLvoid*)offsetof(glmlv::Vertex3f3f2f, texCoords));
+
+	glBindBuffer(GL_ARRAY_BUFFER, 0); // We can unbind the VBO because OpenGL has "written" in the VAO what VBO it needs to read when the VAO will be drawn
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, m_SceneAdjacencyIBO); // Binding the IBO to GL_ELEMENT_ARRAY_BUFFER while a VAO is bound "writes" it in the VAO for usage when the VAO will be drawn
+
+	glBindVertexArray(0);
+
 }
 
 void Application::initShadersData()
@@ -615,6 +498,7 @@ void Application::initShadersData()
     m_uGBufferSamplerLocations[GAmbient] = glGetUniformLocation(m_shadingPassProgram.glId(), "uGAmbient");
     m_uGBufferSamplerLocations[GDiffuse] = glGetUniformLocation(m_shadingPassProgram.glId(), "uGDiffuse");
     m_uGBufferSamplerLocations[GGlossyShininess] = glGetUniformLocation(m_shadingPassProgram.glId(), "uGGlossyShininess");
+	m_uGBufferSamplerLocations[GStencil] = glGetUniformLocation(m_shadingPassProgram.glId(), "uGStencil");
     
     m_uDirectionalLightDirLocation = glGetUniformLocation(m_shadingPassProgram.glId(), "uDirectionalLightDir");
     m_uDirectionalLightIntensityLocation = glGetUniformLocation(m_shadingPassProgram.glId(), "uDirectionalLightIntensity");
@@ -627,10 +511,118 @@ void Application::initShadersData()
     m_uGDepthSamplerLocation = glGetUniformLocation(m_displayDepthProgram.glId(), "uGDepth");
 
 	m_displayStencilProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "shadingPass.vs.glsl", m_ShadersRootPath / m_AppName / "displayStencil.fs.glsl" });
-	m_uGStencilSamplerLocation = glGetUniformLocation(m_displayDepthProgram.glId(), "uGStencil");
+	m_uGStencilSamplerLocation = glGetUniformLocation(m_displayStencilProgram.glId(), "uGStencil");
 
     m_displayPositionProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "shadingPass.vs.glsl", m_ShadersRootPath / m_AppName / "displayPosition.fs.glsl" });
 
     m_uGPositionSamplerLocation = glGetUniformLocation(m_displayPositionProgram.glId(), "uGPosition");
     m_uSceneSizeLocation = glGetUniformLocation(m_displayPositionProgram.glId(), "uSceneSize");
+
+	m_silhouetteProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "silhouette.vs.glsl", m_ShadersRootPath / m_AppName / "silhouette.gs.glsl" });
+	m_ugWVPLocation = glGetUniformLocation(m_silhouetteProgram.glId(), "gWVP");
+	m_ugWorldLocation = glGetUniformLocation(m_silhouetteProgram.glId(), "gWorld");
+	m_uLightPos = glGetUniformLocation(m_silhouetteProgram.glId(), "gLightPos");
+}
+
+void Application::createAdjacencyIndexBuffer() {
+	std::cout << "I will iterate " << m_meshes.size() << std::endl;
+	for (size_t meshNumber = 0; meshNumber < m_meshes.size(); meshNumber++)
+	{
+		std::cout << meshNumber << "th step" << std::endl;
+		glmlv::Mesh currentMesh = m_meshes[meshNumber];
+		MeshAdjacency newMeshAdjacency;
+
+		for (size_t faceNumber = 0; faceNumber < m_meshes[meshNumber].faces.size(); faceNumber++)
+		{
+			std::cout << "    " << faceNumber << "th face" << std::endl;
+			unsigned int verticesInFace = 3;
+			
+			for (size_t currentVertexInFace = 0; currentVertexInFace < verticesInFace; currentVertexInFace++)
+			{
+				std::cout << "        " << currentVertexInFace << "th vertex" << std::endl;
+				size_t nextVertexInFace = currentVertexInFace + 1;
+				size_t oppositeVertexInFace = nextVertexInFace + 1;
+				
+				if (currentVertexInFace >= verticesInFace - 1)
+				{
+					nextVertexInFace = 0;
+					oppositeVertexInFace = nextVertexInFace + 1;
+				}
+
+				if (nextVertexInFace >= verticesInFace - 1)
+				{
+					oppositeVertexInFace = 0;
+				}
+
+				std::vector<Edge>::iterator it;
+
+				Edge edge;
+				edge.a = currentMesh.faces[faceNumber].indices[currentVertexInFace];
+				edge.b = currentMesh.faces[faceNumber].indices[nextVertexInFace];
+				
+				std::ostringstream stringStream;
+				stringStream << edge.a << edge.b;
+
+				std::string id = stringStream.str();
+
+				// Store neighbour
+				newMeshAdjacency.edges[id].push_back(currentMesh.faces[faceNumber].indices[oppositeVertexInFace]);
+			}
+
+			m_meshesAdjacency.push_back(newMeshAdjacency);
+		}		
+	}
+
+	std::cout << "first loop finished !" << std::endl;
+
+	for (size_t meshNumber = 0; meshNumber < m_meshes.size(); meshNumber++)
+	{
+		glmlv::Mesh currentMesh = m_meshes[meshNumber];
+
+		for (size_t faceNumber = 0; faceNumber < m_meshes[meshNumber].faces.size(); faceNumber++)
+		{
+			unsigned int verticesInFace = 3;
+
+			for (size_t currentVertexInFace = 0; currentVertexInFace < verticesInFace; currentVertexInFace++)
+			{
+				size_t nextVertexInFace = currentVertexInFace + 1;
+				size_t oppositeVertexInFace = nextVertexInFace + 1;
+
+				if (currentVertexInFace >= verticesInFace - 1)
+				{
+					nextVertexInFace = 0;
+					oppositeVertexInFace = nextVertexInFace + 1;
+				}
+
+				if (nextVertexInFace >= verticesInFace - 1)
+				{
+					oppositeVertexInFace = 0;
+				}
+
+				Edge edge;
+				edge.a = currentMesh.faces[faceNumber].indices[currentVertexInFace];
+				edge.b = currentMesh.faces[faceNumber].indices[nextVertexInFace];
+
+				std::ostringstream stringStream;
+				stringStream << edge.a << edge.b;
+
+				std::string id = stringStream.str();
+
+				auto neighbours = m_meshesAdjacency[meshNumber].edges[id];
+
+				GLuint oppositeIndex;
+
+				for (auto index : neighbours)
+				{
+					if (index != oppositeVertexInFace)
+						oppositeIndex = index;
+				}
+
+				m_indexAdjacencyBuffer.push_back(currentMesh.faces[faceNumber].indices[currentVertexInFace]);
+				m_indexAdjacencyBuffer.push_back(oppositeIndex);
+
+			}
+
+		}
+	}
 }

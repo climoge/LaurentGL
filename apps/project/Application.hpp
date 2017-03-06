@@ -5,6 +5,9 @@
 #include <glmlv/GLProgram.hpp>
 #include <glmlv/ViewController.hpp>
 #include <glmlv/simple_geometry.hpp>
+#include <map>
+#include <glmlv/load_obj.hpp>
+
 
 #include <glm/glm.hpp>
 
@@ -53,7 +56,7 @@ private:
     };
 
     const char * m_GBufferTexNames[GBufferTextureCount + 1] = { "position", "normal", "ambient", "diffuse", "glossyShininess", "depth", "stencil", "beauty" }; // Tricks, since we cant blit depth, we use its value to draw the result of the shading pass
-    const GLenum m_GBufferTextureFormat[GBufferTextureCount] = { GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGBA32F, GL_DEPTH_COMPONENT32F, GL_DEPTH24_STENCIL8 };
+    const GLenum m_GBufferTextureFormat[GBufferTextureCount] = { GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGBA32F, GL_DEPTH_COMPONENT32F, GL_RGB32F };
     GLuint m_GBufferTextures[GBufferTextureCount];
     GLuint m_GBufferFBO; // Framebuffer object
 
@@ -164,4 +167,32 @@ private:
     glm::vec3 m_PointLightColor = glm::vec3(1, 1, 1);
     float m_PointLightIntensity = 5.f;
 
+	std::vector<glmlv::Mesh> m_meshes;
+
+	struct Edge {
+
+		unsigned int a;
+		unsigned int b;
+
+	};
+
+	struct MeshAdjacency {
+		std::unordered_map<std::string, std::vector<GLuint>> edges;
+
+	};
+
+	std::vector<MeshAdjacency> m_meshesAdjacency;
+
+	void createAdjacencyIndexBuffer();
+
+	std::vector<uint32_t> m_indexAdjacencyBuffer;
+
+	glmlv::GLProgram m_silhouetteProgram;
+
+	GLint m_ugWVPLocation;
+	GLint m_ugWorldLocation;
+	GLint m_uLightPos;
+
+	GLuint m_SceneAdjacencyIBO = 0;
+	GLuint m_SceneAdjacencyVAO = 0;
 };

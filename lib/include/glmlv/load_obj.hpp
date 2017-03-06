@@ -7,6 +7,14 @@
 
 namespace glmlv
 {
+	struct Face {
+		std::vector<uint32_t> indices;
+	};
+
+	struct Mesh {
+		std::vector<Face> faces;
+	};
+
     struct ObjData
     {
         struct PhongMaterial
@@ -35,6 +43,9 @@ namespace glmlv
 
         std::vector<PhongMaterial> materials;
         std::vector<Image2DRGBA> textures;
+
+		std::vector<Mesh> meshes;
+
     };
 
     void loadObj(const fs::path & objPath, const fs::path & mtlBaseDir, ObjData & data, bool loadTextures = true);

@@ -1,13 +1,13 @@
 #include <glmlv/load_obj.hpp>
 
-#define TINYOBJLOADER_IMPLEMENTATION
-#include <tiny_obj_loader.h>
-
 #include <iostream>
 #include <unordered_map>
 #include <unordered_set>
 #include <string>
 #include <algorithm>
+
+#define TINYOBJLOADER_IMPLEMENTATION
+#include <tiny_obj_loader.h>
 
 namespace glmlv
 {
@@ -67,6 +67,23 @@ void loadObj(const fs::path & objPath, const fs::path & mtlBaseDir, ObjData & da
     for (const auto & shape : shapes)
     {
         const auto & mesh = shape.mesh;
+		
+
+		size_t indexOffset = 0;
+		Mesh newMesh;
+
+		for (size_t n = 0; n < shape.mesh.num_face_vertices.size(); n++) {
+			Face newFace;
+			int ngon = shape.mesh.num_face_vertices[n];
+			for (size_t f = 0; f < ngon; f++) {
+				unsigned int v = shape.mesh.indices[indexOffset + f].vertex_index;		
+				newFace.indices.push_back(v);
+			}
+			newMesh.faces.push_back(newFace);
+			indexOffset += ngon;
+		}
+		data.meshes.push_back(newMesh);
+
         for (const auto & idx : mesh.indices)
         {
             const auto it = indexMap.find(idx);
