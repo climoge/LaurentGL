@@ -33,8 +33,9 @@ int Application::run()
             glViewport(0, 0, m_nWindowWidth, m_nWindowHeight);
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+            //const auto modelMatrix = glm::scale(glm::mat4(), glm::vec3(0.05f, 0.05f, 0.05f)); // Used for cube.obj
+            
             const auto modelMatrix = glm::mat4();
-
             const auto mvMatrix = viewMatrix * modelMatrix;
             const auto mvpMatrix = projMatrix * mvMatrix;
             const auto normalMatrix = glm::transpose(glm::inverse(mvMatrix));
@@ -42,6 +43,7 @@ int Application::run()
             glUniformMatrix4fv(m_uModelViewProjMatrixLocation, 1, GL_FALSE, glm::value_ptr(mvpMatrix));
             glUniformMatrix4fv(m_uModelViewMatrixLocation, 1, GL_FALSE, glm::value_ptr(mvMatrix));
             glUniformMatrix4fv(m_uNormalMatrixLocation, 1, GL_FALSE, glm::value_ptr(normalMatrix));
+            glUniform3f(m_uCameraPositionLocation, viewMatrix[3][0], viewMatrix[3][1], viewMatrix[3][2]);
 
             // Same sampler for all texture units
             glBindSampler(0, m_textureSampler);
@@ -54,6 +56,7 @@ int Application::run()
             glUniform1i(m_uKdSamplerLocation, 1);
             glUniform1i(m_uKsSamplerLocation, 2);
             glUniform1i(m_uShininessSamplerLocation, 3);
+            glUniform1i(m_uNormalSamplerLocation, 4);
 
             const auto bindMaterial = [&](const PhongMaterial & material)
             {
@@ -61,6 +64,7 @@ int Application::run()
                 glUniform3fv(m_uKdLocation, 1, glm::value_ptr(material.Kd));
                 glUniform3fv(m_uKsLocation, 1, glm::value_ptr(material.Ks));
                 glUniform1fv(m_uShininessLocation, 1, &material.shininess);
+                glUniform3fv(m_uNormalLocation, 1, glm::value_ptr(material.normal));
 
                 glActiveTexture(GL_TEXTURE0);
                 glBindTexture(GL_TEXTURE_2D, material.KaTextureId);
@@ -70,6 +74,8 @@ int Application::run()
                 glBindTexture(GL_TEXTURE_2D, material.KsTextureId);
                 glActiveTexture(GL_TEXTURE3);
                 glBindTexture(GL_TEXTURE_2D, material.shininessTextureId);
+                glActiveTexture(GL_TEXTURE4);
+                glBindTexture(GL_TEXTURE_2D, material.normalTextureId);
             };
 
             glBindVertexArray(m_SceneVAO);
@@ -158,6 +164,7 @@ int Application::run()
         const auto viewportSize = m_GLFWHandle.framebufferSize();
         glViewport(0, 0, viewportSize.x, viewportSize.y);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        glHint(GL_FRAGMENT_SHADER_DERIVATIVE_HINT,  GL_FASTEST );
 
         if (m_CurrentlyDisplayed == GBufferTextureCount) // Beauty
         {
@@ -353,6 +360,7 @@ Application::Application(int argc, char** argv):
     
 
     glEnable(GL_DEPTH_TEST);
+    glHint(GL_FRAGMENT_SHADER_DERIVATIVE_HINT,  GL_FASTEST );
     m_viewController.setSpeed(m_SceneSizeLength * 0.1f); // Let's travel 10% of the scene per second
 
     // Init GBuffer
@@ -452,6 +460,13 @@ void Application::initScene()
         glm::vec4 white(1.f, 1.f, 1.f, 1.f);
         glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 1, 1, GL_RGBA, GL_FLOAT, &white);
         glBindTexture(GL_TEXTURE_2D, 0);
+        
+        glGenTextures(1, &m_BlackTexture);
+        glBindTexture(GL_TEXTURE_2D, m_BlackTexture);
+        glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, 1, 1);
+        glm::vec4 black(0.f, 0.f, 0.f, 0.f);
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 1, 1, GL_RGBA, GL_FLOAT, &black);
+        glBindTexture(GL_TEXTURE_2D, 0);
 
         // Upload all textures to the GPU
         std::vector<GLint> textureIds;
@@ -473,11 +488,13 @@ void Application::initScene()
             newMaterial.Ka = material.Ka;
             newMaterial.Kd = material.Kd;
             newMaterial.Ks = material.Ks;
+            newMaterial.normal = material.normal;
             newMaterial.shininess = material.shininess;
             newMaterial.KaTextureId = material.KaTextureId >= 0 ? textureIds[material.KaTextureId] : m_WhiteTexture;
             newMaterial.KdTextureId = material.KdTextureId >= 0 ? textureIds[material.KdTextureId] : m_WhiteTexture;
             newMaterial.KsTextureId = material.KsTextureId >= 0 ? textureIds[material.KsTextureId] : m_WhiteTexture;
             newMaterial.shininessTextureId = material.shininessTextureId >= 0 ? textureIds[material.shininessTextureId] : m_WhiteTexture;
+            newMaterial.normalTextureId = material.normalTextureId >= 0 ? textureIds[material.normalTextureId] : m_BlackTexture;
 
             m_SceneMaterials.emplace_back(newMaterial);
         }
@@ -489,6 +506,7 @@ void Application::initScene()
         m_DefaultMaterial.KaTextureId = m_WhiteTexture;
         m_DefaultMaterial.KdTextureId = m_WhiteTexture;
         m_DefaultMaterial.KsTextureId = m_WhiteTexture;
+        m_DefaultMaterial.normalTextureId = m_WhiteTexture;
         m_DefaultMaterial.shininessTextureId = m_WhiteTexture;
     }
 
@@ -537,11 +555,14 @@ void Application::initShadersData()
     m_uKaLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uKa");
     m_uKdLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uKd");
     m_uKsLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uKs");
+    m_uNormalLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uNormal");
     m_uShininessLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uShininess");
+    m_uCameraPositionLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uCameraPosition");
     m_uKaSamplerLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uKaSampler");
     m_uKdSamplerLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uKdSampler");
     m_uKsSamplerLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uKsSampler");
     m_uShininessSamplerLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uShininessSampler");
+    m_uNormalSamplerLocation = glGetUniformLocation(m_geometryPassProgram.glId(), "uNormalSampler");
 
     m_shadingPassProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "shadingPass.vs.glsl", m_ShadersRootPath / m_AppName / "shadingPass.fs.glsl" });
 
