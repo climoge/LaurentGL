@@ -48,11 +48,13 @@ private:
         GDiffuse,
         GGlossyShininess,
         GDepth,
+		GSsao,
+		GBlurredSsao,
         GBufferTextureCount
     };
 
-    const char * m_GBufferTexNames[GBufferTextureCount + 1] = { "position", "normal", "ambient", "diffuse", "glossyShininess", "depth", "beauty" }; // Tricks, since we cant blit depth, we use its value to draw the result of the shading pass
-    const GLenum m_GBufferTextureFormat[GBufferTextureCount] = { GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGBA32F, GL_DEPTH_COMPONENT32F };
+    const char * m_GBufferTexNames[GBufferTextureCount + 1] = { "position", "normal", "ambient", "diffuse", "glossyShininess", "depth", "ssao", "blurred ssao", "beauty" }; // Tricks, since we cant blit depth, we use its value to draw the result of the shading pass
+    const GLenum m_GBufferTextureFormat[GBufferTextureCount] = { GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGBA32F, GL_DEPTH_COMPONENT32F, GL_RGB32F, GL_RGB32F };
     GLuint m_GBufferTextures[GBufferTextureCount];
     GLuint m_GBufferFBO; // Framebuffer object
 
@@ -154,4 +156,12 @@ private:
 	GLuint m_ssaoColorBuffer;
 	void computeNoiseTexture();
 	void initSsaoFbo();
+	glmlv::GLProgram m_shaderSSAO;
+
+	GLint m_uPositionSamplerLocation;
+	GLint m_uNormalSamplerLocation;
+	GLint m_uTexNoiseSamplerLocation;
+	
+	GLint m_uSamplesLocation;
+	GLint m_uProjMatrixLocation;
 };
