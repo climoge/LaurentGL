@@ -450,4 +450,56 @@ void Application::initShadersData()
 
     m_uGPositionSamplerLocation = glGetUniformLocation(m_displayPositionProgram.glId(), "uGPosition");
     m_uSceneSizeLocation = glGetUniformLocation(m_displayPositionProgram.glId(), "uSceneSize");
+GLfloat lerp(GLfloat a, GLfloat b, GLfloat f) {
+	return a + f * (b - a);
+}
+
+void Application::computeNoiseTexture() {
+
+	std::uniform_real_distribution<GLfloat> randomFloats(0.f, 1.f);
+	std::default_random_engine generator;
+
+	for (GLuint i = 0; i < 64; i++)
+	{
+
+		glm::vec3 sample(
+			randomFloats(generator) * 2.f - 1.f,
+			randomFloats(generator) * 2.f - 1.f,
+			randomFloats(generator)
+		);
+
+		sample = glm::normalize(sample);
+		sample *= randomFloats(generator);
+
+		GLfloat scale = GLfloat(i) / 64.f;
+		scale = lerp(0.1f, 1.f, scale * scale);
+
+		sample *= scale;
+
+		m_ssaoKernel.push_back(sample);
+	}
+
+	std::vector<glm::vec3> ssaoNoise;
+
+	for (GLuint i = 0; i < 921600; i++)
+	{
+		glm::vec3 noise(
+			randomFloats(generator) * 2.f - 1.f,
+			randomFloats(generator) * 2.f - 1.f,
+			0.f
+		);
+
+		ssaoNoise.push_back(noise);
+	}
+
+	glGenTextures(1, &m_noiseTexture);
+	glBindTexture(GL_TEXTURE_2D, m_noiseTexture);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB16F, m_nWindowWidth, m_nWindowHeight, 0, GL_RGB, GL_FLOAT, &ssaoNoise[0]);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	
+}
 }

@@ -146,4 +146,9 @@ private:
     glm::vec3 m_PointLightColor = glm::vec3(1, 1, 1);
     float m_PointLightIntensity = 5.f;
 
+	// SSAO data
+
+	GLuint m_noiseTexture;
+	std::vector<glm::vec3> m_ssaoKernel;
+	void computeNoiseTexture();
 };
