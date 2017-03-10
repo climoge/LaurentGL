@@ -502,4 +502,21 @@ void Application::computeNoiseTexture() {
 	glBindTexture(GL_TEXTURE_2D, 0);
 	
 }
+
+void Application::initSsaoFbo() {
+
+	glGenFramebuffers(1, &m_ssaoFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, m_ssaoFBO);
+
+		glGenTextures(1, &m_ssaoColorBuffer);
+		glBindTexture(GL_TEXTURE_2D, m_ssaoColorBuffer);
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, m_nWindowWidth, m_nWindowHeight, 0, GL_RGB, GL_FLOAT, NULL);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_ssaoColorBuffer, 0);
+		glBindTexture(GL_TEXTURE_2D, 0);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+}
+
 }

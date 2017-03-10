@@ -150,5 +150,8 @@ private:
 
 	GLuint m_noiseTexture;
 	std::vector<glm::vec3> m_ssaoKernel;
+	GLuint m_ssaoFBO;
+	GLuint m_ssaoColorBuffer;
 	void computeNoiseTexture();
+	void initSsaoFbo();
 };
