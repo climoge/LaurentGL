@@ -164,4 +164,13 @@ private:
 	
 	GLint m_uSamplesLocation;
 	GLint m_uProjMatrixLocation;
+
+	// SSAO Blur
+	void initSsaoBlurFbo();
+
+	GLuint m_ssaoBlurFBO, m_ssaoColorBufferBlur;
+
+	glmlv::GLProgram m_blurSsaoShader;
+
+	GLint m_uSsaoSamplerLocation;
 };

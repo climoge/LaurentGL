@@ -129,6 +129,25 @@ int Application::run()
 
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
+
+		// Blur SSAO pass
+		{
+			glBindFramebuffer(GL_FRAMEBUFFER, m_ssaoBlurFBO);
+			glClear(GL_COLOR_BUFFER_BIT);
+
+			m_blurSsaoShader.use();
+
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, m_ssaoColorBuffer);
+			glUniform1i(m_uSsaoSamplerLocation, 0);
+
+			glBindVertexArray(m_TriangleVAO);
+			glDrawArrays(GL_TRIANGLES, 0, 3);
+			glBindVertexArray(0);
+
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+
         // Put here rendering code
         const auto viewportSize = m_GLFWHandle.framebufferSize();
         glViewport(0, 0, viewportSize.x, viewportSize.y);
@@ -201,6 +220,17 @@ int Application::run()
 				glDrawArrays(GL_TRIANGLES, 0, 3);
 				glBindVertexArray(0);
 
+				//glBindTexture(GL_TEXTURE_2D, 0);
+		}
+		else if (m_CurrentlyDisplayed == GBlurredSsao) {
+			// SSAO blur Pass
+				glActiveTexture(GL_TEXTURE0);
+				glBindTexture(GL_TEXTURE_2D, m_ssaoColorBufferBlur);
+
+				glBindVertexArray(m_TriangleVAO);
+				glDrawArrays(GL_TRIANGLES, 0, 3);
+				glBindVertexArray(0);
+				
 				//glBindTexture(GL_TEXTURE_2D, 0);
 		}
         else
@@ -458,6 +488,7 @@ void Application::initScene()
 	// Init SSAO data
 	computeNoiseTexture();
 	initSsaoFbo();
+	initSsaoBlurFbo();
 }
 
 void Application::initShadersData()
@@ -508,6 +539,12 @@ void Application::initShadersData()
 	m_uTexNoiseSamplerLocation = glGetUniformLocation(m_shaderSSAO.glId(), "texNoise");
 
 	m_uProjMatrixLocation = glGetUniformLocation(m_shaderSSAO.glId(), "projection");
+
+	// Blur SSAO shader
+	m_blurSsaoShader = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "shadingPass.vs.glsl", m_ShadersRootPath / m_AppName / "blurSsao.fs.glsl" });
+	m_uSsaoSamplerLocation = glGetUniformLocation(m_blurSsaoShader.glId(), "ssaoInput");
+}
+
 GLfloat lerp(GLfloat a, GLfloat b, GLfloat f) {
 	return a + f * (b - a);
 }
@@ -577,4 +614,15 @@ void Application::initSsaoFbo() {
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
+void Application::initSsaoBlurFbo() {
+	glGenFramebuffers(1, &m_ssaoBlurFBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, m_ssaoBlurFBO);
+	glGenTextures(1, &m_ssaoColorBufferBlur);
+	glBindTexture(GL_TEXTURE_2D, m_ssaoColorBufferBlur);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, m_nWindowWidth, m_nWindowHeight, 0, GL_RGB, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_ssaoColorBufferBlur, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
