@@ -173,6 +173,10 @@ int Application::run()
                     glUniform1i(m_uGBufferSamplerLocations[i], i);
                 }
 
+				glActiveTexture(GL_TEXTURE0 + GBlurredSsao);
+				glBindTexture(GL_TEXTURE_2D, m_ssaoColorBufferBlur);
+				glUniform1i(m_uSsaoBufferLocation, GBlurredSsao);
+
                 glBindVertexArray(m_TriangleVAO);
                 glDrawArrays(GL_TRIANGLES, 0, 3);
                 glBindVertexArray(0);
@@ -222,6 +226,7 @@ int Application::run()
 
 				//glBindTexture(GL_TEXTURE_2D, 0);
 		}
+
 		else if (m_CurrentlyDisplayed == GBlurredSsao) {
 			// SSAO blur Pass
 				glActiveTexture(GL_TEXTURE0);
@@ -233,6 +238,7 @@ int Application::run()
 				
 				//glBindTexture(GL_TEXTURE_2D, 0);
 		}
+
         else
         {
             // GBuffer display
@@ -485,6 +491,7 @@ void Application::initScene()
     glGenSamplers(1, &m_textureSampler);
     glSamplerParameteri(m_textureSampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glSamplerParameteri(m_textureSampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
 	// Init SSAO data
 	computeNoiseTexture();
 	initSsaoFbo();
@@ -515,7 +522,8 @@ void Application::initShadersData()
     m_uGBufferSamplerLocations[GAmbient] = glGetUniformLocation(m_shadingPassProgram.glId(), "uGAmbient");
     m_uGBufferSamplerLocations[GDiffuse] = glGetUniformLocation(m_shadingPassProgram.glId(), "uGDiffuse");
     m_uGBufferSamplerLocations[GGlossyShininess] = glGetUniformLocation(m_shadingPassProgram.glId(), "uGGlossyShininess");
-    
+    m_uSsaoBufferLocation = glGetUniformLocation(m_shadingPassProgram.glId(), "uSsao");
+
     m_uDirectionalLightDirLocation = glGetUniformLocation(m_shadingPassProgram.glId(), "uDirectionalLightDir");
     m_uDirectionalLightIntensityLocation = glGetUniformLocation(m_shadingPassProgram.glId(), "uDirectionalLightIntensity");
 

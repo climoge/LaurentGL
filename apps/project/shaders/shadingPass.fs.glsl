@@ -6,6 +6,7 @@ uniform sampler2D uGNormal;
 uniform sampler2D uGAmbient;
 uniform sampler2D uGDiffuse;
 uniform sampler2D uGGlossyShininess;
+uniform sampler2D uSsao;
 
 out vec3 fColor;
 
@@ -45,7 +46,7 @@ void main()
         dothDirLight = pow(dothDirLight, shininess);
     }
 
-    fColor = ka;
+    fColor = ka * vec3(texelFetch(uSsao, ivec2(gl_FragCoord.xy), 0));
     fColor += kd * (uDirectionalLightIntensity * max(0.f, dot(normal, uDirectionalLightDir)) + pointLightIncidentLight * max(0., dot(normal, dirToPointLight)));
     fColor += ks * (uDirectionalLightIntensity * dothDirLight + pointLightIncidentLight * dothPointLight);
 }
