@@ -18,8 +18,8 @@
 int Application::run()
 {
     float clearColor[3] = { 0, 0, 0 };
-    // Loop until the user closes the window
     for (auto iterationCount = 0u; !m_GLFWHandle.shouldClose(); ++iterationCount)
+    // Loop until the user closes the window
     {
         const auto seconds = glfwGetTime();
 
@@ -238,7 +238,35 @@ int Application::run()
 				
 				//glBindTexture(GL_TEXTURE_2D, 0);
 		}
+		else if (m_CurrentlyDisplayed == GShadingPass) // Shading pass only
+		{
+			// Shading pass
+			{
+				m_shadingPassOnlyProgram.use();
 
+				glUniform3fv(m_uDirectionalLightDirLocation, 1, glm::value_ptr(glm::vec3(viewMatrix * glm::vec4(glm::normalize(m_DirLightDirection), 0))));
+				glUniform3fv(m_uDirectionalLightIntensityLocation, 1, glm::value_ptr(m_DirLightColor * m_DirLightIntensity));
+
+				glUniform3fv(m_uPointLightPositionLocation, 1, glm::value_ptr(glm::vec3(viewMatrix * glm::vec4(m_PointLightPosition, 1))));
+				glUniform3fv(m_uPointLightIntensityLocation, 1, glm::value_ptr(m_PointLightColor * m_PointLightIntensity));
+
+				for (int32_t i = GPosition; i < GDepth; ++i)
+				{
+					glActiveTexture(GL_TEXTURE0 + i);
+					glBindTexture(GL_TEXTURE_2D, m_GBufferTextures[i]);
+
+					glUniform1i(m_uGBufferSamplerLocations[i], i);
+				}
+
+				glActiveTexture(GL_TEXTURE0 + GBlurredSsao);
+				glBindTexture(GL_TEXTURE_2D, m_ssaoColorBufferBlur);
+				glUniform1i(m_uSsaoBufferLocation, GBlurredSsao);
+
+				glBindVertexArray(m_TriangleVAO);
+				glDrawArrays(GL_TRIANGLES, 0, 3);
+				glBindVertexArray(0);
+			}
+		}
         else
         {
             // GBuffer display
@@ -529,6 +557,21 @@ void Application::initShadersData()
 
     m_uPointLightPositionLocation = glGetUniformLocation(m_shadingPassProgram.glId(), "uPointLightPosition");
     m_uPointLightIntensityLocation = glGetUniformLocation(m_shadingPassProgram.glId(), "uPointLightIntensity");
+
+	// Shading without SSAO
+	m_shadingPassOnlyProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "shadingPass.vs.glsl", m_ShadersRootPath / m_AppName / "shadingPassOnly.fs.glsl" });
+
+	m_uGBufferSamplerLocations[GPosition] = glGetUniformLocation(m_shadingPassOnlyProgram.glId(), "uGPosition");
+	m_uGBufferSamplerLocations[GNormal] = glGetUniformLocation(m_shadingPassOnlyProgram.glId(), "uGNormal");
+	m_uGBufferSamplerLocations[GAmbient] = glGetUniformLocation(m_shadingPassOnlyProgram.glId(), "uGAmbient");
+	m_uGBufferSamplerLocations[GDiffuse] = glGetUniformLocation(m_shadingPassOnlyProgram.glId(), "uGDiffuse");
+	m_uGBufferSamplerLocations[GGlossyShininess] = glGetUniformLocation(m_shadingPassOnlyProgram.glId(), "uGGlossyShininess");
+
+	m_uSODirectionalLightDirLocation = glGetUniformLocation(m_shadingPassOnlyProgram.glId(), "uDirectionalLightDir");
+	m_uSODirectionalLightIntensityLocation = glGetUniformLocation(m_shadingPassOnlyProgram.glId(), "uDirectionalLightIntensity");
+
+	m_uSOPointLightPositionLocation = glGetUniformLocation(m_shadingPassOnlyProgram.glId(), "uPointLightPosition");
+	m_uSOPointLightIntensityLocation = glGetUniformLocation(m_shadingPassOnlyProgram.glId(), "uPointLightIntensity");
 
     m_displayDepthProgram = glmlv::compileProgram({ m_ShadersRootPath / m_AppName / "shadingPass.vs.glsl", m_ShadersRootPath / m_AppName / "displayDepth.fs.glsl" });
 

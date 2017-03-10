@@ -50,11 +50,12 @@ private:
         GDepth,
 		GSsao,
 		GBlurredSsao,
+		GShadingPass,
         GBufferTextureCount
     };
 
-    const char * m_GBufferTexNames[GBufferTextureCount + 1] = { "position", "normal", "ambient", "diffuse", "glossyShininess", "depth", "ssao", "blurred ssao", "beauty" }; // Tricks, since we cant blit depth, we use its value to draw the result of the shading pass
-    const GLenum m_GBufferTextureFormat[GBufferTextureCount] = { GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGBA32F, GL_DEPTH_COMPONENT32F, GL_RGB32F, GL_RGB32F };
+    const char * m_GBufferTexNames[GBufferTextureCount + 1] = { "position", "normal", "ambient", "diffuse", "glossyShininess", "depth", "ssao", "blurred ssao", "shading pass", "beauty" }; // Tricks, since we cant blit depth, we use its value to draw the result of the shading pass
+    const GLenum m_GBufferTextureFormat[GBufferTextureCount] = { GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGB32F, GL_RGBA32F, GL_DEPTH_COMPONENT32F, GL_RGB32F, GL_RGB32F, GL_RGB32F };
     GLuint m_GBufferTextures[GBufferTextureCount];
     GLuint m_GBufferFBO; // Framebuffer object
 
@@ -130,6 +131,13 @@ private:
     GLint m_uDirectionalLightIntensityLocation;
     GLint m_uPointLightPositionLocation;
     GLint m_uPointLightIntensityLocation;
+
+	// Shading pass without SSAO
+	glmlv::GLProgram m_shadingPassOnlyProgram;
+	GLint m_uSODirectionalLightDirLocation;
+	GLint m_uSODirectionalLightIntensityLocation;
+	GLint m_uSOPointLightPositionLocation;
+	GLint m_uSOPointLightIntensityLocation;
 
     // Display depth pass uniforms
     GLint m_uGDepthSamplerLocation;
