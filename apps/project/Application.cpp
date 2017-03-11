@@ -644,14 +644,6 @@ void Application::computeSSAO() {
 	}
 
 	// Noise texture
-    /*
-    *   THIS IS EXTREMELY DIRTY
-    *   better practice : make a noise texture 4*4 and tile it when using it with a noisescale
-    *   but can't make it work right now and commit can NOT WAIT THIS IS IMAC3
-    *   
-    *   making a 921600 loop is the perfect way to end these 3 years
-    *
-    *************/
 
 	for (GLuint i = 0; i < 16; i++) {
 		glm::vec3 noise(randomFloats(generator) * 2.0 - 1.0, randomFloats(generator)*2.0 - 1.0, 0.0f);
