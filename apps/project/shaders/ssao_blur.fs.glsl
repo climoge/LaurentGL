@@ -10,7 +10,7 @@ void main() {
     {
         for (int y = -2; y < 2; ++y) 
         {
-            vec2 offset = vec2(float(x), float(y)) * texelSize;
+            vec2 offset = vec2(float(x), float(y));
             result += vec3(texelFetch(ssaoInput, ivec2(gl_FragCoord.xy + offset.xy), 0)).r;
         }
     }
