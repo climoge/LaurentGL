@@ -22,8 +22,9 @@ void main()
     // Get input for SSAO algorithm
     vec3 fragPos = vec3(texelFetch(uSSAOGPosition, ivec2(gl_FragCoord.xy), 0))  / uSSAOGSceneSize;
     vec3 normal = vec3(texelFetch(uSSAOGNormal, ivec2(gl_FragCoord.xy), 0));
-    //vec3 theNoise = vec3(texelFetch(uSSAOGTexNoise, ivec2(gl_FragCoord.xy), 0));
-    vec3 randomVec = vec3(normalize(texelFetch(uSSAOGTexNoise, ivec2(gl_FragCoord.xy), 0)));
+	ivec2 randomVecTile = ivec2(gl_FragCoord.xy/4);
+	vec3 randomVec = vec3(normalize(texelFetch(uSSAOGTexNoise, ivec2(gl_FragCoord.xy - randomVecTile * 4.0), 0)));
+    //vec3 randomVec = vec3(normalize(texelFetch(uSSAOGTexNoise, ivec2(gl_FragCoord.xy), 0)));
     // Create TBN change-of-basis matrix: from tangent-space to view-space
     vec3 tangent = normalize(randomVec - normal * dot(randomVec, normal));
     vec3 bitangent = cross(normal, tangent);

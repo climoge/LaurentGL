@@ -653,7 +653,7 @@ void Application::computeSSAO() {
     *
     *************/
 
-	for (GLuint i = 0; i < 921600; i++) {
+	for (GLuint i = 0; i < 16; i++) {
 		glm::vec3 noise(randomFloats(generator) * 2.0 - 1.0, randomFloats(generator)*2.0 - 1.0, 0.0f);
 		m_ssaoNoise.push_back(noise);
         //m_ssaoNoise.push_back(glm::vec3(1, 1, 1));
@@ -661,7 +661,7 @@ void Application::computeSSAO() {
 
     glGenTextures(1, &m_noiseTexture);
     glBindTexture(GL_TEXTURE_2D, m_noiseTexture);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, 1280, 720, 0, GL_RGB, GL_FLOAT, &m_ssaoNoise[0]);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB32F, 4, 4, 0, GL_RGB, GL_FLOAT, &m_ssaoNoise[0]);
     /*glTexStorage2D(GL_TEXTURE_2D, 1, GL_RGB32F, 4, 4);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 4, 4, GL_RGB, GL_FLOAT, &m_ssaoNoise);*/
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
