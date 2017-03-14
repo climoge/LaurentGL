@@ -1,5 +1,6 @@
 #include <glmlv/simple_geometry.hpp>
 #include <glm/gtc/constants.hpp>
+#include <iostream>
 
 namespace glmlv
 {
@@ -72,6 +73,111 @@ SimpleGeometry makeCube()
         20, 21, 22,
         20, 22, 23
     };
+
+    return{ vertexBuffer, indexBuffer };
+}
+
+/*SimpleGeometry makeFlag(std::Vector<PMat>& pMats)
+{
+    std::vector<Vertex3f3f2f> vertexBuffer;
+    std::vector<uint32_t> indexBuffer;
+    
+    uint32_t index = 0;
+    
+    for(float j = 0; j <= 1; j += 0.1){
+		for(float i = 0; i <= 1; i += 0.1){
+			vertexBuffer.push_back(Vertex3f3f2f(glm::vec3(i, j, 0), glm::vec3(0, 0, 1), glm::vec2(0, 0)));
+			vertexBuffer.push_back(Vertex3f3f2f(glm::vec3(i + 0.1, j, 0), glm::vec3(0, 0, 1), glm::vec2(0, 0)));
+			vertexBuffer.push_back(Vertex3f3f2f(glm::vec3(i + 0.1, j + 0.1, 0), glm::vec3(0, 0, 1), glm::vec2(0, 0)));
+			vertexBuffer.push_back(Vertex3f3f2f(glm::vec3(i, j + 0.1, 0), glm::vec3(0, 0, 1), glm::vec2(0, 0)));
+			
+			indexBuffer.push_back(index);
+			indexBuffer.push_back(index+1);
+			indexBuffer.push_back(index+2);
+			indexBuffer.push_back(index);
+			indexBuffer.push_back(index+2);
+			indexBuffer.push_back(index+3);
+			
+			index += 4;
+		}
+	}
+	
+	for(auto const& pMat: pMats) {
+		vertexBuffer.push_back(Vertex3f3f2f(glm::vec3(pMat[i].getPos().x, pMat[i].getPos().y, 0), glm::vec3(0, 0, 1), glm::vec2(0, 0)));
+		indexBuffer.push_back(index);
+		index++;
+	}
+
+    return{ vertexBuffer, indexBuffer };
+}*/
+
+SimpleGeometry makeFlag()
+{
+    std::vector<Vertex3f3f2f> vertexBuffer;
+    std::vector<uint32_t> indexBuffer;
+    
+    uint32_t index = 0;
+    
+    unsigned int width = 10;
+    unsigned int height = 10;
+    
+    for(float j = 0; j <= 1; j += (1/(float) height)*2){
+		for(float i = 0; i <= 1; i += (1/(float) width)*2){
+			vertexBuffer.push_back(Vertex3f3f2f(glm::vec3(i, j, 0), glm::vec3(0, 0, 1), glm::vec2(0, 0)));
+			vertexBuffer.push_back(Vertex3f3f2f(glm::vec3(i, j + 0.1, 0), glm::vec3(0, 0, 1), glm::vec2(0, 0)));
+			if(index == 0) vertexBuffer.push_back(Vertex3f3f2f(glm::vec3(i + 0.5, j-1, 0), glm::vec3(0, 0, 1), glm::vec2(0, 0)));
+			else vertexBuffer.push_back(Vertex3f3f2f(glm::vec3(i + 0.1, j, 0), glm::vec3(0, 0, 1), glm::vec2(0, 0)));
+			vertexBuffer.push_back(Vertex3f3f2f(glm::vec3(i + 0.1, j + 0.1, 0), glm::vec3(0, 0, 1), glm::vec2(0, 0)));
+			
+			if(index >= (2*width)){
+				std::cout << "index " << index << std::endl;
+				int offset = index - (width*2-1);
+				std::cout << "offset " << offset << std::endl;
+				indexBuffer.push_back(offset);
+				indexBuffer.push_back(index);
+				indexBuffer.push_back(offset + 2);
+				std::cout << "Vertex 1 : " << offset << " " << index << " " << offset+2 << std::endl;
+				indexBuffer.push_back(index);
+				indexBuffer.push_back(index+2);
+				indexBuffer.push_back(offset + 2);
+				std::cout << "Vertex 1 : " << index << " " << index+2 << " " << offset+2 << std::endl;
+				
+				if(index % (4*width) < 36){
+					std::cout << "index " << index << std::endl;
+					int offset = index - (width*2-1) + 2;
+					std::cout << "offset " << offset << std::endl;
+					indexBuffer.push_back(offset);
+					indexBuffer.push_back(index+2);
+					indexBuffer.push_back(offset + 2);
+					std::cout << "Vertex 1 : " << offset << " " << index+2 << " " << offset+2 << std::endl;
+					indexBuffer.push_back(index+2);
+					indexBuffer.push_back(index+4);
+					indexBuffer.push_back(offset + 2);
+					std::cout << "Vertex 1 : " << index+2 << " " << index+4 << " " << offset+2 << std::endl << std::endl;
+				}
+			}
+			
+			
+			
+			if(index > 0 && index % (4*width)){				
+				indexBuffer.push_back(index-2);
+				indexBuffer.push_back(index-1);
+				indexBuffer.push_back(index);
+				indexBuffer.push_back(index-1);
+				indexBuffer.push_back(index+1);
+				indexBuffer.push_back(index);
+			}
+			
+			indexBuffer.push_back(index);
+			indexBuffer.push_back(index+1);
+			indexBuffer.push_back(index+2);
+			indexBuffer.push_back(index+1);
+			indexBuffer.push_back(index+3);
+			indexBuffer.push_back(index+2);
+			
+			index += 4;
+		}
+	}
 
     return{ vertexBuffer, indexBuffer };
 }
