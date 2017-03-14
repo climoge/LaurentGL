@@ -61,8 +61,6 @@ private:
     GLuint m_GBufferFBO; // Framebuffer object
 
     GBufferTextureType m_CurrentlyDisplayed = GBufferTextureCount; // Default to beauty
-    
-    glmlv::SimpleGeometry m_flagGeometry;
 
     // Triangle covering the whole screen, for the shading pass:
     GLuint m_TriangleVBO = 0;
